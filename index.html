@@ -6,6 +6,41 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>ae-QUEST</title>
+
+<!-- ===============================================================
+     FIREBASE - cross-device sync (optional).
+     Without it the app uses localStorage automatically - still works!
+     TO ENABLE:
+       1. console.firebase.google.com -> your project -> Settings -> Web app
+       2. Copy your firebaseConfig values and paste them below
+       3. Remove the opening and closing comment markers around the block
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey:            "PASTE_HERE",
+    authDomain:        "PASTE_HERE",
+    projectId:         "PASTE_HERE",
+    storageBucket:     "PASTE_HERE",
+    messagingSenderId: "PASTE_HERE",
+    appId:             "PASTE_HERE"
+  });
+  window._aedb = firebase.firestore();
+</script>
+
+     FIRESTORE RULES to paste in Firebase console -> Firestore -> Rules tab:
+
+     rules_version = '2';
+     service cloud.firestore {
+       match /databases/{database}/documents {
+         match /aequest/state {
+           allow read, write: if true;
+         }
+       }
+     }
+     =============================================================== -->
+
 <style>
 :root{--line:rgba(255,255,255,.13);--card:rgba(255,255,255,.06);--txt:#f2f0ff;--dim:#a099c4;
 --neon:#00e5ff;--pink:#ff3d97;--purp:#8b5cf6;--gold:#ffd76e;--safe:env(safe-area-inset-bottom,0px)}
@@ -13,7 +48,21 @@
 html,body{margin:0;padding:0;height:100%}
 body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-serif;
 background:radial-gradient(120% 80% at 50% -10%,#2a1150 0%,#0a0a14 55%,#05050a 100%);color:var(--txt);overflow:hidden}
-#app{display:flex;flex-direction:column;height:100%;max-width:480px;margin:0 auto;position:relative}
+#pinwall{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+ background:radial-gradient(120% 80% at 50% -10%,#2a1150 0%,#0a0a14 55%,#05050a 100%);padding:24px}
+.pinbox{width:100%;max-width:280px;text-align:center}
+.pin-logo{font-weight:800;letter-spacing:.22em;font-size:22px;background:linear-gradient(90deg,var(--neon),var(--pink));
+ -webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:4px}
+.pin-sub{font-size:10px;color:var(--dim);letter-spacing:.18em;margin-bottom:26px}
+.pin-dots{display:flex;justify-content:center;gap:14px;margin-bottom:22px}
+.pin-dot{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);transition:all .15s}
+.pin-dot.on{background:var(--neon);border-color:var(--neon);box-shadow:0 0 10px var(--neon)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.pin-key{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);border-radius:14px;
+ color:#f2f0ff;font-size:20px;font-weight:700;padding:15px 0;font-family:inherit;transition:background .1s;cursor:pointer}
+.pin-key:active{background:rgba(0,229,255,.18)}
+.pin-err{color:#ff8fb8;font-size:11px;min-height:16px;margin-top:10px;letter-spacing:.08em}
+#app{display:none;flex-direction:column;height:100%;max-width:480px;margin:0 auto;position:relative}
 header{padding:12px 16px 6px;flex:0 0 auto}
 .brand{display:flex;align-items:center;justify-content:space-between}
 .logo{font-weight:800;letter-spacing:.22em;font-size:14px;background:linear-gradient(90deg,var(--neon),var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -124,12 +173,45 @@ backdrop-filter:blur(14px);border-radius:13px;padding:11px 13px;font-size:12px;z
 .toast.show{display:block;animation:pop .3s}
 .filerow{position:relative;overflow:hidden;display:block}
 .filerow input[type=file]{position:absolute;inset:0;opacity:0;width:100%;height:100%}
+.unlock-bar{height:7px;border-radius:9px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:8px}
+.unlock-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--purp),var(--pink));transition:width .5s}
+.welcome-card{background:linear-gradient(135deg,rgba(0,229,255,.1),rgba(139,92,246,.12));
+border:1px solid rgba(0,229,255,.3);border-radius:16px;padding:13px;margin-top:6px}
 </style>
 </head>
 <body>
+
+<!-- PIN WALL -->
+<div id="pinwall">
+  <div class="pinbox">
+    <div class="pin-logo">ae-QUEST</div>
+    <div class="pin-sub">ENTER PIN TO CONTINUE</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-pad" id="pin-pad">
+      <button class="pin-key" data-k="1">1</button>
+      <button class="pin-key" data-k="2">2</button>
+      <button class="pin-key" data-k="3">3</button>
+      <button class="pin-key" data-k="4">4</button>
+      <button class="pin-key" data-k="5">5</button>
+      <button class="pin-key" data-k="6">6</button>
+      <button class="pin-key" data-k="7">7</button>
+      <button class="pin-key" data-k="8">8</button>
+      <button class="pin-key" data-k="9">9</button>
+      <button class="pin-key" data-k="clr" style="font-size:12px;letter-spacing:.04em">CLR</button>
+      <button class="pin-key" data-k="0">0</button>
+      <button class="pin-key" data-k="del">&#9003;</button>
+    </div>
+    <div class="pin-err" id="pin-err"></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
 <div id="app">
 <header>
-  <div class="brand"><div class="logo">ae-QUEST</div><div class="who" id="mode">LOCAL DEMO</div></div>
+  <div class="brand"><div class="logo">ae-QUEST</div><div class="who" id="mode">LOCAL</div></div>
   <div class="balance">
     <div class="bal-row"><div class="bal-n" id="bal">0</div><div class="bal-l">SYNK TOKENS</div></div>
     <div class="chips">
@@ -151,19 +233,11 @@ backdrop-filter:blur(14px);border-radius:13px;padding:11px 13px;font-size:12px;z
 </div>
 
 <script>
-/* =====================================================================
-   ae-QUEST v3 — gamified productivity gacha
-   Storage: localStorage (demo). Swap DB.load/DB.save for Firestore.
-   Firestore shape:
-     users/{uid}                -> whole S object (minus log)
-     users/{uid}/log/{autoId}   -> log entries
-     users/{uid}/pending/{id}   -> pending approvals (photo in Storage)
-     admins/{uid}               -> existence = admin
-   ===================================================================== */
-var VER = 3;
-var ADMIN_PIN = "0420";   // client-side only; real gate is Firestore rules
+var VER=3;
+var ADMIN_PIN="0420";
+var APP_PIN="0420"; // <- change this to your desired 4-digit PIN
 
-/* ---------- default config ---------- */
+/* ---------- defaults ---------- */
 function defPools(){return{
 1:{name:"REAL WORLD",tag:"1 TOKEN",cardChance:.15,pity:10,
    blurb:"Micro-treats and buffs. Cheap, frequent dopamine.",items:[
@@ -222,36 +296,72 @@ function defPools(){return{
  {id:"d14",w:1,r:"MYTHIC",p:"SECRET: $75 GRAND PRIZE",d:"Lightstick, tickets, dinner, whatever you want. The big one.",v:75,e:"none",s:1}]}
 };}
 function defTasks(){return[
- {id:"t1",label:"Pomodoro completed",tok:1,note:"photo of the finished timer",until:null},
- {id:"t2",label:"4-pomodoro day bonus",tok:2,note:"claim once after your 4th pomo",until:null},
- {id:"t3",label:"Went into lab / work",tok:3,note:"badge-in or desk photo",until:null},
- {id:"t4",label:"Woke up on target time",tok:2,note:"clock photo within 10 min of alarm",until:null},
- {id:"t5",label:"Sent the scary email",tok:1,note:"screenshot of sent folder",until:null},
- {id:"t6",label:"90-min phone-free block",tok:2,note:"screen-time screenshot",until:null},
- {id:"t7",label:"Movement (20 min+)",tok:1,note:"gym, walk, anything",until:null},
- {id:"t8",label:"In bed by target",tok:1,note:"one photo, no doomscroll",until:null},
- {id:"t9",label:"Weekly: 5 days of work",tok:5,note:"claim Sunday night",until:null},
- {id:"e1",label:"EVENT: hang your posters",tok:2,note:"unpacking special, photo of the wall",until:Date.now()+5*864e5}
+ {id:"t1",label:"Pomodoro completed",tok:1,note:"photo of the finished timer",until:null,unlockAt:0},
+ {id:"t2",label:"4-pomodoro day bonus",tok:2,note:"claim once after your 4th pomo of the day",until:null,unlockAt:0},
+ {id:"t3",label:"Went into lab / work",tok:3,note:"badge-in or desk photo",until:null,unlockAt:10},
+ {id:"t4",label:"Woke up on target time",tok:2,note:"clock photo within 10 min of alarm",until:null,unlockAt:15},
+ {id:"t5",label:"Sent the scary email",tok:1,note:"screenshot of sent folder",until:null,unlockAt:20},
+ {id:"t6",label:"90-min phone-free block",tok:2,note:"screen-time screenshot",until:null,unlockAt:25},
+ {id:"t7",label:"Movement (20 min+)",tok:1,note:"gym, walk, anything",until:null,unlockAt:30},
+ {id:"t8",label:"In bed by target",tok:1,note:"one photo, no doomscroll",until:null,unlockAt:35},
+ {id:"t9",label:"Weekly: 5 days of work",tok:5,note:"claim Sunday night",until:null,unlockAt:40},
+ {id:"e1",label:"EVENT: hang your posters",tok:2,note:"unpacking special, photo of the wall",until:Date.now()+5*864e5,unlockAt:0}
 ];}
 function defSet(n){return{id:"s"+n,name:"ARMAGEDDON SET "+n,completed:false,cards:[
  {id:"karina",nm:"KARINA",ln:"Blade",cls:"k",img:null,n:0},
  {id:"giselle",nm:"GISELLE",ln:"Sound",cls:"g",img:null,n:0},
  {id:"winter",nm:"WINTER",ln:"Frost",cls:"w",img:null,n:0},
  {id:"ningning",nm:"NINGNING",ln:"Voice",cls:"n",img:null,n:0}]};}
-function defState(){return{v:VER,tokens:0,streak:0,pomosToday:0,shards:0,setsDone:0,
+function defState(){return{v:VER,tokens:0,lifetimeTokens:0,streak:0,pomosToday:0,shards:0,setsDone:0,
  pity:{1:0,3:0,5:0,10:0},buffs:[],revealed:[],pools:defPools(),tasks:defTasks(),
  sets:[defSet(1)],active:0,pending:[],log:[],seq:100};}
 
-/* ---------- storage ---------- */
-var DB={key:"aequest_v3",
- load:function(){try{return JSON.parse(localStorage.getItem(this.key))}catch(e){return null}},
- save:function(s){try{localStorage.setItem(this.key,JSON.stringify(s));return true}
-   catch(e){toast("Storage full. Clear old photos in Admin > Tools.");return false}}};
-var S=DB.load();
-if(!S||S.v!==VER){S=defState();}
-function save(){DB.save(S);}
+/* ==========================================================
+   STORAGE - Firebase if available, localStorage as fallback
+   ========================================================== */
+var S = null;
+var _docRef = null;
 
-/* ---------- effects ---------- */
+function initApp(){
+  if(window._aedb){
+    document.getElementById("mode").textContent="CLOUD SYNC";
+    _docRef=window._aedb.collection("aequest").doc("state");
+    _docRef.get().then(function(snap){
+      S=snap.exists?snap.data():defState();
+      _migrate();
+      render();
+    }).catch(function(e){
+      console.warn("Firestore load failed, falling back to localStorage",e);
+      _loadLocal();
+      render();
+    });
+  } else {
+    _loadLocal();
+    render();
+  }
+}
+function _loadLocal(){
+  var raw=null;
+  try{raw=JSON.parse(localStorage.getItem("aequest_v3"))}catch(e){}
+  S=(raw&&raw.v===VER)?raw:defState();
+  _migrate();
+}
+function _migrate(){
+  if(S.lifetimeTokens==null)S.lifetimeTokens=0;
+  S.tasks.forEach(function(t){if(t.unlockAt==null)t.unlockAt=0;});
+}
+function save(){
+  if(_docRef){
+    _docRef.set(JSON.parse(JSON.stringify(S))).catch(function(e){
+      console.warn("Firestore save error",e);
+    });
+  } else {
+    try{localStorage.setItem("aequest_v3",JSON.stringify(S))}
+    catch(e){toast("Storage full. Clear old photos in Admin > Tools.");}
+  }
+}
+/* ========================================================== */
+
 var EFFECTS={none:"- none -",m15_24:"x1.5 tokens / 24h",m2_24:"x2 tokens / 24h",m2_72:"x2 tokens / 72h",
  m3_24:"x3 tokens / 24h",bounty3:"+1 per pomo, 3 uses",spin1:"refund 1 token",spin3:"refund 3 tokens",
  spin5:"grant 5 tokens",spin10:"grant 10 tokens",card1:"guaranteed photocard",card2:"two photocards",
@@ -261,12 +371,11 @@ var RCOLOR={DUD:"#7a7a8c",COMMON:"#9ad7ff",BUFF:"#7bffcf",RARE:"#ff9ad7",EPIC:"#
 var RARITIES=["DUD","COMMON","BUFF","RARE","EPIC","LEGEND","MYTHIC","SECRET"];
 var GOOD=["RARE","EPIC","LEGEND","MYTHIC","SECRET"];
 
-/* ---------- helpers ---------- */
 function $(s){return document.querySelector(s)}
 function esc(t){return String(t==null?"":t).replace(/[<>&"]/g,function(c){
  return{"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]})}
 function toast(m){var t=$("#toast");t.textContent=m;t.classList.add("show");
- clearTimeout(t._x);t._x=setTimeout(function(){t.classList.remove("show")},2800)}
+ clearTimeout(t._x);t._x=setTimeout(function(){t.classList.remove("show")},3000)}
 function ago(ts){var d=(Date.now()-ts)/1000;if(d<60)return"just now";if(d<3600)return Math.floor(d/60)+"m ago";
  if(d<86400)return Math.floor(d/3600)+"h ago";return Math.floor(d/86400)+"d ago"}
 function inDays(ts){var d=(ts-Date.now())/864e5;if(d<=0)return"expired";if(d<1)return Math.ceil(d*24)+"h left";return Math.ceil(d)+"d left"}
@@ -289,10 +398,15 @@ function shrink(file,cb){var r=new FileReader();r.onload=function(){var im=new I
   c.getContext("2d").drawImage(im,0,0,c.width,c.height);cb(c.toDataURL("image/jpeg",.62))};
  im.onerror=function(){toast("Could not read that image")};im.src=r.result};r.readAsDataURL(file)}
 
-/* ---------- view state ---------- */
 var tab="spin",unlocked=false,openOdds={},draft={task:null,photo:null,note:""},adminSub="queue";
 
-/* ================== RENDER ================== */
+function checkUnlocks(prevLT,currLT){
+ var newly=S.tasks.filter(function(t){var ua=t.unlockAt||0;return ua>0&&prevLT<ua&&currLT>=ua;});
+ if(newly.length){setTimeout(function(){
+  toast("\uD83D\uDD13 Unlocked: "+newly.map(function(t){return t.label}).join(", "));
+ },700);}
+}
+
 function head(){
  pruneBuffs();
  $("#bal").textContent=S.tokens;
@@ -317,15 +431,13 @@ function oddsHTML(p){
  var sorted=P.items.slice().sort(function(a,b){return (b.w||0)-(a.w||0)});
  sorted.forEach(function(i){
   var hide=i.s&&S.revealed.indexOf(i.id)<0;
-  var nm=hide?"??? SECRET PRIZE":i.p;
-  var ds=hide?"Hidden until someone pulls it.":i.d;
+  var nm=hide?"??? SECRET PRIZE":i.p;var ds=hide?"Hidden until someone pulls it.":i.d;
   h+='<div class="orow"><div class="n"><span class="tag" style="color:'+(RCOLOR[i.r]||"#fff")+
     ';border-color:'+(RCOLOR[i.r]||"#fff")+'">'+esc(i.r)+'</span>'+esc(nm)+
     '<small>'+esc(ds)+(i.e&&i.e!=="none"?" ["+EFFECTS[i.e]+"]":"")+'</small></div>'+
     '<div class="pct" style="color:'+(RCOLOR[i.r]||"#fff")+'">'+(t?((i.w/t)*100).toFixed(1):"0")+'%</div></div>';
  });
- h+='<div class="hint" style="margin-top:8px">Photocard chance this pool: '+Math.round(P.cardChance*100)+
-  '%. Pity: a guaranteed RARE-or-better every '+P.pity+' pulls without one.</div></div>';
+ h+='<div class="hint" style="margin-top:8px">Photocard chance: '+Math.round(P.cardChance*100)+'%. Pity every '+P.pity+' pulls.</div></div>';
  return h;
 }
 function viewSpin(){
@@ -341,9 +453,9 @@ function viewSpin(){
    (openOdds[c]?oddsHTML(c):"")+'</div>';
  });
  h+='<div class="box dash"><b style="font-size:12.5px">SET BONUS</b><div class="hint">'+
-  'Every spin can drop a photocard from '+esc(activeSet().name)+'. Complete the set for <b>+5 tokens, a free 5-token spin, and one KWANGYA-tier prize</b>, then a new set opens. Duplicates become shards (10 shards = free 3-token spin).<br>Shards: <b>'+
+  'Every spin can drop a photocard from '+esc(activeSet().name)+'. Complete the set for <b>+10 tokens and a KWANGYA-tier prize</b>. Duplicates become shards (10 shards = free 3-token spin).<br>Shards: <b>'+
   S.shards+'</b> &nbsp; Sets completed: <b>'+S.setsDone+'</b></div>'+
-  (S.shards>=10?'<button class="btn sm" data-act="shards">REDEEM 10 SHARDS -> FREE 3-TOKEN SPIN</button>':"")+'</div>';
+  (S.shards>=10?'<button class="btn sm" data-act="shards">REDEEM 10 SHARDS &#x2192; FREE 3-TOKEN SPIN</button>':"")+'</div>';
  return h;
 }
 function viewCards(){
@@ -355,7 +467,7 @@ function viewCards(){
  });
  h+='</div><div class="box"><b style="font-size:12.5px">'+owned()+"/"+st.cards.length+' collected</b>'+
   '<div class="hint">Shards: <b>'+S.shards+'</b>'+(S.shards>=10?" (redeemable)":"")+
-  '<br>Set completion pays +5 tokens, a free 5-token spin, and a KWANGYA-tier physical prize of your choosing.</div>'+
+  '<br>Set completion pays +10 tokens and a KWANGYA-tier prize.</div>'+
   (S.shards>=10?'<button class="btn sm" data-act="shards">REDEEM 10 SHARDS</button>':"")+'</div>';
  if(S.setsDone){
   h+='<div class="sec-t">COMPLETED SETS</div>';
@@ -365,22 +477,28 @@ function viewCards(){
  return h;
 }
 function viewSubmit(){
- var h='<div class="sec-t">SUBMIT PROOF</div><div class="box"><div class="hint">'+
-  'Pick what you did, attach the photo, send it. It lands in the approval queue and tokens appear once approved.</div></div>'+
+ var lt=S.lifetimeTokens||0,now=Date.now();
+ var visibleTasks=S.tasks.filter(function(t){if(t.until&&t.until<now)return false;return(t.unlockAt||0)<=lt;});
+ var lockedTasks=S.tasks.filter(function(t){if(t.until&&t.until<now)return false;return(t.unlockAt||0)>lt;});
+ var nextThreshold=null;
+ lockedTasks.forEach(function(t){var ua=t.unlockAt||0;if(nextThreshold===null||ua<nextThreshold)nextThreshold=ua;});
+ if(draft.task){var dT=null;S.tasks.forEach(function(t){if(t.id===draft.task)dT=t});
+  if(!dT||(dT.unlockAt||0)>lt)draft.task=null;}
+ var h="";
+ if(lt<3){h+='<div class="welcome-card"><b style="font-size:13px">&#127919; Welcome to ae-QUEST!</b>'+
+  '<div class="hint" style="margin-top:6px;color:var(--txt);opacity:.85">Finish a focused pomodoro, snap a photo of the timer, and hit <b>SEND FOR APPROVAL</b>. '+
+  'Earn tokens, and more ways to log your work will unlock over time. One pomo at a time!</div></div>';}
+ h+='<div class="sec-t">SUBMIT PROOF</div><div class="box"><div class="hint">Pick what you did, attach the photo, send it. Tokens appear once approved.</div></div>'+
   '<div class="sec-t">WHAT DID YOU DO</div><div class="grid2">';
- S.tasks.forEach(function(t){
-  if(t.until&&t.until<Date.now())return;
-  var ev=t.until?" &middot; "+inDays(t.until):"";
+ if(!visibleTasks.length){h+='</div><div class="hint" style="padding:8px 2px">No active tasks right now.</div>';}
+ else{visibleTasks.forEach(function(t){var ev=t.until?" &middot; "+inDays(t.until):"";
   h+='<button class="q'+(draft.task===t.id?" on":"")+'" data-act="pick" data-id="'+t.id+'"><b>'+esc(t.label)+
-   '</b><span>+'+t.tok+" token"+(t.tok>1?"s":"")+ev+'</span></button>';
- });
- h+='</div>';
+   '</b><span>+'+t.tok+" token"+(t.tok>1?"s":"")+ev+'</span></button>';});h+='</div>';}
  var T=null;S.tasks.forEach(function(t){if(t.id===draft.task)T=t});
- if(T){
+ if(T&&(T.unlockAt||0)<=lt){
   h+='<div class="box"><b style="font-size:12.5px">'+esc(T.label)+' (+'+T.tok+')</b>'+
    '<div class="hint">'+esc(T.note||"")+'</div>'+
-   '<label class="f">PHOTO PROOF</label>'+
-   '<div class="filerow"><button class="btn ghost sm">'+(draft.photo?"REPLACE PHOTO":"ADD PHOTO")+
+   '<label class="f">PHOTO PROOF</label><div class="filerow"><button class="btn ghost sm">'+(draft.photo?"REPLACE PHOTO":"ADD PHOTO")+
    '</button><input type="file" accept="image/*" data-up="proof"></div>'+
    (draft.photo?'<img class="thumb" src="'+draft.photo+'">':"")+
    '<label class="f">NOTE (optional)</label><input data-d="note" value="'+esc(draft.note)+'" placeholder="anything I should know">'+
@@ -388,19 +506,38 @@ function viewSubmit(){
    '<button class="btn ghost sm" data-act="cancel">CANCEL</button></div>';
  }
  var mine=S.pending.slice();
- if(mine.length){
-  h+='<div class="sec-t">WAITING ON APPROVAL</div>';
+ if(mine.length){h+='<div class="sec-t">WAITING ON APPROVAL</div>';
   mine.forEach(function(p){h+='<div class="li"><div class="t">'+esc(p.label)+'</div><div class="m">sent '+
-   ago(p.ts)+(p.note?" &middot; "+esc(p.note):"")+'</div><div class="v" style="color:#a099c4">+'+p.tok+'</div></div>'});
+   ago(p.ts)+(p.note?" &middot; "+esc(p.note):"")+'</div><div class="v" style="color:#a099c4">+'+p.tok+'</div></div>'});}
+ if(lockedTasks.length&&nextThreshold!==null){
+  var pct=Math.min(100,Math.round((lt/nextThreshold)*100));
+  var nextBatch=lockedTasks.filter(function(t){return(t.unlockAt||0)===nextThreshold;});
+  var further=lockedTasks.filter(function(t){return(t.unlockAt||0)>nextThreshold;});
+  h+='<div class="sec-t">COMING SOON</div>'+
+   '<div class="box" style="background:linear-gradient(135deg,rgba(139,92,246,.12),rgba(255,61,151,.08));border-color:rgba(139,92,246,.3)">'+
+   '<div style="display:flex;justify-content:space-between;align-items:center">'+
+   '<b style="font-size:12px">&#128274; Next unlock</b>'+
+   '<span style="font-size:10px;color:var(--dim)">'+lt+' / '+nextThreshold+' lifetime tokens</span></div>'+
+   '<div class="unlock-bar"><i style="width:'+pct+'%"></i></div>'+
+   '<div class="hint" style="margin-top:9px">'+nextBatch.map(function(t){
+    return '&#128274; <b>'+esc(t.label)+'</b> &mdash; +'+t.tok+' token'+(t.tok>1?'s':'');
+   }).join('<br>')+'</div></div>';
+  if(further.length){h+='<div class="hint" style="margin-top:9px;padding:0 2px;font-size:10px">Further ahead: '+
+   further.map(function(t){return'<b>'+esc(t.label)+'</b> (at '+t.unlockAt+'t)'}).join(', ')+'</div>';}
+ } else if(!lockedTasks.length&&lt>=10){
+  h+='<div class="box" style="border-color:rgba(0,229,255,.35);margin-top:12px">'+
+   '<div class="hint" style="text-align:center">&#127881; All activities unlocked! Keep earning and spending in GACHA.</div></div>';
  }
- h+='<div class="sec-t">EARN TABLE</div>';
+ h+='<div class="sec-t">FULL EARN TABLE</div>';
  S.tasks.forEach(function(t){
   var exp=t.until?(t.until<Date.now()?"EXPIRED":"EVENT &middot; "+inDays(t.until)):"";
-  h+='<div class="li earn"><div class="t">'+esc(t.label)+'</div><div class="m">'+esc(t.note||"")+
-   (exp?" &middot; "+exp:"")+'</div><div class="v" style="color:#00e5ff">+'+t.tok+'</div></div>';
+  var isLocked=(t.unlockAt||0)>lt,isExpired=t.until&&t.until<Date.now();
+  h+='<div class="li earn" style="'+(isLocked||isExpired?"opacity:.38":"")+'">'+'<div class="t">'+esc(t.label)+
+   (isLocked?'<span style="font-size:9px;color:var(--purp);margin-left:6px">&#128274; at '+(t.unlockAt||0)+'t</span>':'')+
+   '</div><div class="m">'+esc(t.note||"")+(exp?" &middot; "+exp:"")+'</div>'+
+   '<div class="v" style="color:#00e5ff">+'+t.tok+'</div></div>';
  });
- h+='<div class="box dash"><div class="hint">No daily cap right now. Tokens never expire, buffs do. '+
-  'Photos should be live or timestamped where you can.</div></div>';
+ h+='<div class="box dash"><div class="hint">No daily cap. Tokens never expire, buffs do. Photos should be live or timestamped.</div></div>';
  return h;
 }
 function viewLog(){
@@ -411,24 +548,17 @@ function viewLog(){
   h+='<div class="li '+esc(l.type)+'"><div class="t">'+esc(l.title)+'</div><div class="m">'+
    esc(l.meta||"")+" &middot; "+ago(l.ts)+'</div>'+
    (l.value?'<div class="v" style="color:'+col+'">'+esc(l.value)+'</div>':"")+
-   (l.photo?'<img class="thumb" src="'+l.photo+'">':"")+'</div>';
+   (l.photo?'<img class="thumb" src="'+l.photo+'">':'')+'</div>';
  });
  return h;
 }
-/* ---------- admin ---------- */
 function viewAdmin(){
- if(!unlocked){
-  return '<div class="sec-t">ADMIN CONSOLE</div><div class="box"><div class="hint">'+
-   'Enter the PIN. In production this screen is also gated by Firebase Auth plus an /admins/{uid} allow-list rule, '+
-   'so the PIN is convenience and the rules are the real lock.</div>'+
-   '<input id="pin" type="password" inputmode="numeric" placeholder="PIN" autocomplete="off">'+
-   '<button class="btn" data-act="unlock">UNLOCK</button></div>';
- }
+ if(!unlocked){return'<div class="sec-t">ADMIN CONSOLE</div><div class="box"><div class="hint">Enter the admin PIN.</div>'+
+  '<input id="pin" type="password" inputmode="numeric" placeholder="PIN" autocomplete="off">'+
+  '<button class="btn" data-act="unlock">UNLOCK</button></div>';}
  var h='<div class="sec-t">ADMIN &middot; UNLOCKED</div><div class="grid3">'+
   ['queue','grant','prizes','cards','tasks','tools'].map(function(k){
-   return '<button class="q'+(adminSub===k?" on":"")+'" data-act="sub" data-k="'+k+'"><b>'+
-    k.toUpperCase()+'</b></button>'}).join("")+'</div>';
-
+   return'<button class="q'+(adminSub===k?" on":"")+'" data-act="sub" data-k="'+k+'"><b>'+k.toUpperCase()+'</b></button>'}).join("")+'</div>';
  if(adminSub==="queue"){
   h+='<div class="sec-t">PENDING APPROVALS ('+S.pending.length+')</div>';
   if(!S.pending.length)h+='<div class="hint">Queue is empty.</div>';
@@ -442,7 +572,7 @@ function viewAdmin(){
   });
  }
  if(adminSub==="grant"){
-  h+='<div class="sec-t">QUICK GRANT (from texts)</div><div class="grid2">';
+  h+='<div class="sec-t">QUICK GRANT</div><div class="grid2">';
   S.tasks.forEach(function(t){if(t.until&&t.until<Date.now())return;
    h+='<button class="q" data-act="quick" data-id="'+t.id+'"><b>'+esc(t.label)+'</b><span>+'+t.tok+'</span></button>'});
   h+='</div><div class="sec-t">CUSTOM ENTRY</div><div class="box">'+
@@ -462,15 +592,13 @@ function viewAdmin(){
    '<button class="q" data-act="tokens0"><b>Zero tokens</b><span>hard reset balance</span></button></div>';
  }
  if(adminSub==="prizes"){
-  h+='<div class="sec-t">PRIZE TABLE EDITOR</div><div class="box dash"><div class="hint">'+
-   'Weights are relative, they do not need to add to 100. "Value $" is only used to compute the average payout below, '+
-   'so you can rebalance without redeploying. Targets: 1-token ~$0.25, 3 ~$2, 5 ~$5, 10 ~$10.</div></div>';
+  h+='<div class="sec-t">PRIZE TABLE EDITOR</div><div class="box dash"><div class="hint">Weights are relative. Value $ computes avg payout. Targets: 1t~$0.25, 3t~$2, 5t~$5, 10t~$10.</div></div>';
   [1,3,5,10].forEach(function(p){
    var P=S.pools[p],tot=poolTotal(p);
-   h+='<div class="sec-t">'+p+'-TOKEN POOL &middot; avg payout $'+poolEV(p).toFixed(2)+'</div><div class="box">'+
+   h+='<div class="sec-t">'+p+'-TOKEN POOL &middot; avg $'+poolEV(p).toFixed(2)+'</div><div class="box">'+
     '<label class="f">POOL NAME</label><input data-ep="'+p+'" data-f="name" value="'+esc(P.name)+'">'+
-    '<label class="f">DESCRIPTION SHOWN TO HER</label><input data-ep="'+p+'" data-f="blurb" value="'+esc(P.blurb)+'">'+
-    '<div class="grid2"><div><label class="f">CARD CHANCE (0-1)</label>'+
+    '<label class="f">BLURB</label><input data-ep="'+p+'" data-f="blurb" value="'+esc(P.blurb)+'">'+
+    '<div class="grid2"><div><label class="f">CARD CHANCE</label>'+
     '<input data-ep="'+p+'" data-f="cardChance" type="number" step="0.05" value="'+P.cardChance+'"></div>'+
     '<div><label class="f">PITY PULLS</label><input data-ep="'+p+'" data-f="pity" type="number" value="'+P.pity+'"></div></div>';
    P.items.forEach(function(i,ix){
@@ -483,20 +611,18 @@ function viewAdmin(){
      '<input data-ei="'+p+'" data-i="'+ix+'" data-f="w" type="number" step="0.5" value="'+i.w+'"></div>'+
      '<div><label class="f">VALUE $</label><input data-ei="'+p+'" data-i="'+ix+'" data-f="v" type="number" step="0.25" value="'+(i.v||0)+'"></div></div>'+
      '<label class="f">RARITY</label><select data-ei="'+p+'" data-i="'+ix+'" data-f="r">'+
-     RARITIES.map(function(r){return '<option value="'+r+'"'+(i.r===r?" selected":"")+'>'+r+'</option>'}).join("")+'</select>'+
+     RARITIES.map(function(r){return'<option value="'+r+'"'+(i.r===r?" selected":"")+'>'+r+'</option>'}).join("")+'</select>'+
      '<label class="f">EFFECT</label><select data-ei="'+p+'" data-i="'+ix+'" data-f="e">'+
-     Object.keys(EFFECTS).map(function(k){return '<option value="'+k+'"'+((i.e||"none")===k?" selected":"")+'>'+EFFECTS[k]+'</option>'}).join("")+'</select>'+
-     '<label class="f">SECRET (hidden in odds until won)</label><select data-ei="'+p+'" data-i="'+ix+'" data-f="s">'+
+     Object.keys(EFFECTS).map(function(k){return'<option value="'+k+'"'+((i.e||"none")===k?" selected":"")+'>'+EFFECTS[k]+'</option>'}).join("")+'</select>'+
+     '<label class="f">SECRET</label><select data-ei="'+p+'" data-i="'+ix+'" data-f="s">'+
      '<option value="0"'+(i.s?"":" selected")+'>no</option><option value="1"'+(i.s?" selected":"")+'>yes</option></select></div>';
    });
-   h+='<button class="btn ghost sm" data-act="additem" data-pool="'+p+'">+ ADD PRIZE TO THIS POOL</button></div>';
+   h+='<button class="btn ghost sm" data-act="additem" data-pool="'+p+'">+ ADD PRIZE</button></div>';
   });
   h+='<button class="btn no" data-act="resetpools">RESET ALL POOLS TO DEFAULTS</button>';
  }
  if(adminSub==="cards"){
-  h+='<div class="sec-t">PHOTOCARD SETS</div><div class="box dash"><div class="hint">'+
-   'Upload an image per card. Images are resized to 680px JPEG and stored locally in this demo; '+
-   'on Firebase, push them to Storage and save the download URL in the card object.</div></div>';
+  h+='<div class="sec-t">PHOTOCARD SETS</div>';
   S.sets.forEach(function(st,si){
    h+='<div class="box"><div style="display:flex;justify-content:space-between;align-items:center">'+
     '<b style="font-size:12.5px">'+esc(st.name)+(st.completed?" (done)":"")+(si===S.active?" &middot; ACTIVE":"")+'</b>'+
@@ -504,8 +630,7 @@ function viewAdmin(){
     '</div><label class="f">SET NAME</label><input data-es="'+si+'" data-f="name" value="'+esc(st.name)+'">';
    st.cards.forEach(function(c,ci){
     h+='<div class="item"><div style="display:flex;gap:9px;align-items:center">'+
-     '<div class="pc '+c.cls+'" style="width:54px;aspect-ratio:.68;flex:0 0 auto'+
-     (c.img?';background-image:url('+c.img+')':"")+'"></div><div style="flex:1">'+
+     '<div class="pc '+c.cls+'" style="width:54px;aspect-ratio:.68;flex:0 0 auto'+(c.img?';background-image:url('+c.img+')':"")+'"></div><div style="flex:1">'+
      '<input data-ec="'+si+'" data-i="'+ci+'" data-f="nm" value="'+esc(c.nm)+'" placeholder="name">'+
      '<input data-ec="'+si+'" data-i="'+ci+'" data-f="ln" value="'+esc(c.ln)+'" placeholder="subtitle"></div></div>'+
      '<div class="grid2"><div class="filerow"><button class="btn ghost sm">'+(c.img?"REPLACE IMG":"UPLOAD IMG")+
@@ -517,45 +642,54 @@ function viewAdmin(){
   h+='<button class="btn" data-act="newset">+ CREATE NEW SET</button>';
  }
  if(adminSub==="tasks"){
-  h+='<div class="sec-t">TASKS AND SEASONAL EVENTS</div><div class="box dash"><div class="hint">'+
-   'Leave "days" blank for a permanent task. Set days for a limited event, e.g. "hang your posters, 2 tokens, 5 days". '+
-   'Expired events disappear from her list automatically.</div></div>';
+  h+='<div class="sec-t">TASKS AND EVENTS</div>'+
+   '<div class="box dash"><div class="hint"><b>&#128274; Unlock at</b> = lifetime tokens she must have earned before this task appears in SUBMIT. '+
+   'Set to <b>0</b> for always visible. Leave days blank for permanent.</div></div>';
   S.tasks.forEach(function(t,ix){
-   h+='<div class="item"><input data-et="'+ix+'" data-f="label" value="'+esc(t.label)+'" placeholder="task name">'+
-    '<input data-et="'+ix+'" data-f="note" value="'+esc(t.note||"")+'" placeholder="proof required / note">'+
-    '<div class="grid2"><div><label class="f">TOKENS</label>'+
+   var lt=S.lifetimeTokens||0,isLocked=(t.unlockAt||0)>lt;
+   h+='<div class="item" style="border-color:'+(isLocked?"rgba(139,92,246,.5)":"var(--line)")+'">'+
+    '<div style="font-size:9px;letter-spacing:.1em;color:'+(isLocked?"var(--purp)":"#7bffcf")+';margin-bottom:4px">'+
+    (isLocked?'&#128274; LOCKED &mdash; unlocks at '+(t.unlockAt||0)+'t':'&#10003; VISIBLE NOW')+'</div>'+
+    '<input data-et="'+ix+'" data-f="label" value="'+esc(t.label)+'" placeholder="task name">'+
+    '<input data-et="'+ix+'" data-f="note" value="'+esc(t.note||"")+'" placeholder="proof / note">'+
+    '<div class="grid2"><div><label class="f">TOKENS EARNED</label>'+
     '<input data-et="'+ix+'" data-f="tok" type="number" value="'+t.tok+'"></div>'+
     '<div><label class="f">EXPIRES IN DAYS</label><input data-et="'+ix+'" data-f="days" type="number" placeholder="permanent" value="'+
     (t.until?Math.max(0,Math.ceil((t.until-Date.now())/864e5)):"")+'"></div></div>'+
+    '<label class="f">&#128274; UNLOCK AT (lifetime tokens, 0 = always visible)</label>'+
+    '<input data-et="'+ix+'" data-f="unlockAt" type="number" min="0" value="'+(t.unlockAt||0)+'" placeholder="0">'+
     '<button class="btn no sm" data-act="deltask" data-i="'+ix+'">DELETE TASK</button></div>';
   });
   h+='<button class="btn ghost" data-act="addtask">+ ADD TASK / EVENT</button>';
  }
  if(adminSub==="tools"){
+  var lt=S.lifetimeTokens||0;
   h+='<div class="sec-t">AVERAGE PAYOUT CHECK</div><div class="box">';
-  [1,3,5,10].forEach(function(p){h+='<div class="orow"><div class="n">'+p+'-token pool ('+esc(S.pools[p].name)+
-   ')<small>total weight '+poolTotal(p)+'</small></div><div class="pct">$'+poolEV(p).toFixed(2)+'</div></div>'});
-  h+='<div class="hint" style="margin-top:8px">Cost per token if she earns 1 token per pomodoro: '+
-   [1,3,5,10].map(function(p){return p+"t = $"+(poolEV(p)/p).toFixed(2)+"/token"}).join(", ")+'</div></div>'+
+  [1,3,5,10].forEach(function(p){h+='<div class="orow"><div class="n">'+p+'-token ('+esc(S.pools[p].name)+
+   ')<small>weight '+poolTotal(p)+'</small></div><div class="pct">$'+poolEV(p).toFixed(2)+'</div></div>'});
+  h+='</div><div class="sec-t">UNLOCK STATUS</div><div class="box">'+
+   '<div class="orow"><div class="n">Lifetime tokens earned<small>drives unlock thresholds</small></div>'+
+   '<div class="pct" style="color:var(--neon)">'+lt+'</div></div><div style="margin-top:10px">'+
+   S.tasks.map(function(t){var ua=t.unlockAt||0,locked=ua>lt,exp=t.until&&t.until<Date.now();
+    return'<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05)">'+
+     '<span style="font-size:10.5px;color:'+(exp?"#5a5a70":(locked?"#7a7a8c":"#7bffcf"))+'">'+
+     (exp?'&#128989;':(locked?'&#128274;':'&#10003;'))+' '+esc(t.label)+'</span>'+
+     '<span style="font-size:9px;color:var(--dim)">'+ua+'t</span></div>';}).join('')+
+   '</div></div>'+
    '<div class="sec-t">BACKUP AND RESTORE</div><div class="box">'+
-   '<label class="f">CONFIG + STATE JSON</label><textarea id="cfg" spellcheck="false"></textarea>'+
+   '<label class="f">JSON STATE</label><textarea id="cfg" spellcheck="false"></textarea>'+
    '<button class="btn ghost sm" data-act="export">FILL WITH CURRENT STATE</button>'+
    '<button class="btn sm" data-act="import">IMPORT FROM TEXTAREA</button></div>'+
    '<div class="sec-t">MAINTENANCE</div><div class="grid2">'+
    '<button class="q" data-act="clearphotos"><b>Clear log photos</b><span>frees storage</span></button>'+
    '<button class="q" data-act="lock"><b>Lock admin</b><span>hide console</span></button>'+
    '<button class="q" data-act="wipe"><b>Wipe everything</b><span>factory reset</span></button>'+
-   '<button class="q" data-act="reveal"><b>Reveal secrets</b><span>show hidden prizes</span></button></div>'+
-   '<div class="box dash"><div class="hint"><b>Firebase wiring</b><br>'+
-   '1. Create a Firestore project, add a web app, paste the config into a firebase-init script.<br>'+
-   '2. Replace DB.load / DB.save with onSnapshot("users/"+uid) and setDoc.<br>'+
-   '3. Photos: upload to Storage at users/{uid}/proofs/{id}.jpg, store the URL instead of the data URL.<br>'+
-   '4. Rules: she can read her own doc and create pending items; only /admins/{uid} can write tokens, pools, tasks, or approve. '+
-   'Without that rule the PIN can be bypassed from Safari devtools.</div></div>';
+   '<button class="q" data-act="reveal"><b>Reveal secrets</b><span>show hidden prizes</span></button></div>';
  }
  return h;
 }
 function render(){
+ if(!S)return;
  head();
  var m=$("#main");
  m.innerHTML=tab==="spin"?viewSpin():tab==="cards"?viewCards():tab==="submit"?viewSubmit():
@@ -563,56 +697,43 @@ function render(){
  if(tab==="admin"&&unlocked&&adminSub==="tools"){var t=$("#cfg");if(t&&!t.value)t.placeholder="press fill";}
 }
 
-/* ================== ACTIONS ================== */
+/* ---------- Actions ---------- */
 function grantTokens(n,title,meta,photo){
- var mult=multNow(),amt=Math.round(n*mult*100)/100;
- var bonus=0;
- if(/pomodoro|pomo/i.test(title)){
-  for(var i=0;i<S.buffs.length;i++){var b=S.buffs[i];
-   if(b.kind==="bounty"&&b.uses>0){bonus=1;b.uses--;break}}
- }
+ var mult=multNow(),amt=Math.round(n*mult*100)/100,bonus=0;
+ if(/pomodoro|pomo/i.test(title)){for(var i=0;i<S.buffs.length;i++){var b=S.buffs[i];
+  if(b.kind==="bounty"&&b.uses>0){bonus=1;b.uses--;break}}}
  amt=Math.ceil(amt)+bonus;
- S.tokens+=amt;
+ var prevLT=S.lifetimeTokens||0;
+ S.tokens+=amt;S.lifetimeTokens=(S.lifetimeTokens||0)+amt;
  if(/pomodoro/i.test(title))S.pomosToday+=1;
  pruneBuffs();
- pushLog({type:"earn",title:title,meta:(meta||"approved")+(mult>1?" &middot; x"+mult+" buff":"")+(bonus?" &middot; +1 bounty":""),
-  value:"+"+amt,photo:photo||null});
- save();render();toast("+"+amt+" tokens  "+title);
+ pushLog({type:"earn",title:title,meta:(meta||"approved")+(mult>1?" &middot; x"+mult+" buff":"")+(bonus?" &middot; +1 bounty":""),value:"+"+amt,photo:photo||null});
+ checkUnlocks(prevLT,S.lifetimeTokens);
+ save();render();toast("+"+amt+" token"+(amt===1?"":"s")+"  "+title);
 }
-function applyEffect(e,cost){
+function applyEffect(e){
  if(!e||e==="none")return;
- if(e.indexOf("m")===0){
-  var map={m15_24:[1.5,24],m2_24:[2,24],m2_72:[2,72],m3_24:[3,24]},cfg=map[e];
-  if(cfg){S.buffs.push({kind:"mult",value:cfg[0],label:"x"+cfg[0]+" tokens",until:Date.now()+cfg[1]*3600e3});return}
- }
+ if(e.indexOf("m")===0){var map={m15_24:[1.5,24],m2_24:[2,24],m2_72:[2,72],m3_24:[3,24]},cfg=map[e];
+  if(cfg){S.buffs.push({kind:"mult",value:cfg[0],label:"x"+cfg[0]+" tokens",until:Date.now()+cfg[1]*3600e3});return}}
  if(e==="bounty3"){S.buffs.push({kind:"bounty",label:"+1 token per pomodoro",uses:3,until:null});return}
- if(e==="spin1")S.tokens+=1;
- if(e==="spin3")S.tokens+=3;
- if(e==="spin5")S.tokens+=5;
- if(e==="spin10")S.tokens+=10;
+ if(e==="spin1")S.tokens+=1;if(e==="spin3")S.tokens+=3;if(e==="spin5")S.tokens+=5;if(e==="spin10")S.tokens+=10;
  if(e==="shards5")S.shards+=5;
 }
 function giveCard(cardIdx,silent){
  var st=activeSet(),c=st.cards[cardIdx];if(!c)return null;
  var isNew=!c.n;c.n++;if(!isNew)S.shards+=3;
  pushLog({type:"card",title:"Photocard: "+c.nm,meta:isNew?"NEW &middot; "+st.name:"duplicate, +3 shards"});
- if(st.cards.every(function(x){return x.n>0})){completeSet()}
- save();if(!silent)render();
- return{nm:c.nm,isNew:isNew};
+ if(st.cards.every(function(x){return x.n>0}))completeSet();
+ save();if(!silent)render();return{nm:c.nm,isNew:isNew};
 }
 function completeSet(){
  var st=activeSet();st.completed=true;S.setsDone++;S.tokens+=10;
- pushLog({type:"prize",title:"SET COMPLETE: "+st.name,
-  meta:"+5 tokens, free 5-token spin (5 tokens credited), one KWANGYA-tier prize",value:"+10"});
+ pushLog({type:"prize",title:"SET COMPLETE: "+st.name,meta:"+10 tokens and a KWANGYA-tier prize",value:"+10"});
  var next=-1;S.sets.forEach(function(s,i){if(!s.completed&&next<0)next=i});
- if(next<0){
-  var clone=JSON.parse(JSON.stringify(st));
-  clone.id="s"+(S.sets.length+1);clone.name="ARMAGEDDON SET "+(S.sets.length+1);
-  clone.completed=false;clone.cards.forEach(function(c){c.n=0});
-  S.sets.push(clone);next=S.sets.length-1;
- }
- S.active=next;
- setTimeout(function(){toast("SET COMPLETE. +10 tokens and a KWANGYA-tier prize.")},900);
+ if(next<0){var clone=JSON.parse(JSON.stringify(st));clone.id="s"+(S.sets.length+1);
+  clone.name="ARMAGEDDON SET "+(S.sets.length+1);clone.completed=false;clone.cards.forEach(function(c){c.n=0});
+  S.sets.push(clone);next=S.sets.length-1;}
+ S.active=next;setTimeout(function(){toast("SET COMPLETE! +10 tokens and a KWANGYA-tier prize.")},900);
 }
 function doSpin(cost,free){
  var P=S.pools[cost];
@@ -622,51 +743,36 @@ function doSpin(cost,free){
  setTimeout(function(){
   S.pity[cost]=(S.pity[cost]||0)+1;
   var item,forced=false;
-  var pool=P.items.filter(function(i){return (Number(i.w)||0)>0});
+  var pool=P.items.filter(function(i){return(Number(i.w)||0)>0});
   if(!pool.length){R.className="";return toast("That pool has no prizes with weight above zero")}
-  if(S.pity[cost]>=P.pity){
-   var good=pool.filter(function(i){return GOOD.indexOf(i.r)>-1});
-   item=good.length?rollItem(good):rollItem(pool);forced=true;S.pity[cost]=0;
-  }else{
-   item=rollItem(pool);if(GOOD.indexOf(item.r)>-1)S.pity[cost]=0;
-  }
+  if(S.pity[cost]>=P.pity){var good=pool.filter(function(i){return GOOD.indexOf(i.r)>-1});
+   item=good.length?rollItem(good):rollItem(pool);forced=true;S.pity[cost]=0;}
+  else{item=rollItem(pool);if(GOOD.indexOf(item.r)>-1)S.pity[cost]=0;}
   if(item.s&&S.revealed.indexOf(item.id)<0)S.revealed.push(item.id);
-  pushLog({type:"prize",title:item.p,meta:P.name+" &middot; "+item.r+(forced?" &middot; PITY BREAK":""),
-   value:free?"FREE":"-"+cost});
-  applyEffect(item.e,cost);
+  pushLog({type:"prize",title:item.p,meta:P.name+" &middot; "+item.r+(forced?" &middot; PITY BREAK":""),value:free?"FREE":"-"+cost});
+  applyEffect(item.e);
   var pulls=[];
-  if(item.e==="setskip"){
-   var st=activeSet();st.cards.forEach(function(c,ix){if(!c.n)giveCard(ix,true)});
-  }else{
-   var want=item.e==="card2"?2:(item.e==="card1"?1:(Math.random()<P.cardChance?1:0));
-   for(var k=0;k<want;k++){
-    var st2=activeSet();
+  if(item.e==="setskip"){var st=activeSet();st.cards.forEach(function(c,ix){if(!c.n)giveCard(ix,true)});}
+  else{var want=item.e==="card2"?2:(item.e==="card1"?1:(Math.random()<P.cardChance?1:0));
+   for(var k=0;k<want;k++){var st2=activeSet();
     var missing=[];st2.cards.forEach(function(c,ix){if(!c.n)missing.push(ix)});
     var from=(missing.length&&Math.random()<.75)?missing:st2.cards.map(function(c,ix){return ix});
-    var got=giveCard(from[Math.floor(Math.random()*from.length)],true);
-    if(got)pulls.push(got);
-   }
-  }
+    var got=giveCard(from[Math.floor(Math.random()*from.length)],true);if(got)pulls.push(got);}}
   save();
   var h='<div class="revcard"><div class="prizebox">'+
-   '<div class="rr" style="color:'+(RCOLOR[item.r]||"#fff")+'">'+esc(item.r)+
-   (forced?" &middot; PITY BREAK":"")+" &middot; "+esc(P.name)+'</div>'+
+   '<div class="rr" style="color:'+(RCOLOR[item.r]||"#fff")+'">'+esc(item.r)+(forced?" &middot; PITY BREAK":"")+' &middot; '+esc(P.name)+'</div>'+
    '<div class="rp">'+esc(item.p)+'</div><div class="rd">'+esc(item.d)+'</div>';
   if(item.e&&item.e!=="none")h+='<div class="rd" style="margin-top:8px;color:#7bffcf">EFFECT: '+EFFECTS[item.e]+'</div>';
-  if(pulls.length){
-   h+='<div class="pcpull">PHOTOCARD: '+pulls.map(function(p){
-    return "<b>"+esc(p.nm)+"</b>"+(p.isNew?" NEW":" (dupe, +3 shards)")}).join(" + ")+
-    '<br><span style="color:rgba(255,255,255,.6);font-size:11px">'+owned()+"/"+activeSet().cards.length+
-    " in "+esc(activeSet().name)+'</span></div>';
-  }
+  if(pulls.length){h+='<div class="pcpull">PHOTOCARD: '+pulls.map(function(p){
+   return"<b>"+esc(p.nm)+"</b>"+(p.isNew?" NEW":" (dupe, +3 shards)")}).join(" + ")+
+   '<br><span style="color:rgba(255,255,255,.6);font-size:11px">'+owned()+"/"+activeSet().cards.length+" in "+esc(activeSet().name)+'</span></div>';}
   h+='</div><button class="btn" data-act="close">COLLECT</button>';
   if(S.tokens>=cost)h+='<button class="btn ghost" data-act="again" data-pool="'+cost+'">SPIN AGAIN &middot; '+cost+'</button>';
-  h+='</div>';
-  R.innerHTML=h;
+  h+='</div>';R.innerHTML=h;
  },1400);
 }
 
-/* ================== EVENTS ================== */
+/* ---------- Event Listeners ---------- */
 document.getElementById("nav").addEventListener("click",function(e){
  var b=e.target.closest("button[data-tab]");if(!b)return;
  tab=b.dataset.tab;
@@ -680,7 +786,7 @@ document.body.addEventListener("click",function(e){
  if(a==="again"){$("#rev").className="";doSpin(+b.dataset.pool);return}
  if(a==="close"){$("#rev").className="";render();return}
  if(a==="odds"){var p=b.dataset.pool;openOdds[p]=!openOdds[p];render();return}
- if(a==="shards"){if(S.shards<10)return;S.shards-=10;save();toast("Free 3-token spin");doSpin(3,true);return}
+ if(a==="shards"){if(S.shards<10)return;S.shards-=10;save();toast("Free 3-token spin!");doSpin(3,true);return}
  if(a==="pick"){draft.task=b.dataset.id;render();return}
  if(a==="cancel"){draft={task:null,photo:null,note:""};render();return}
  if(a==="send"){
@@ -689,113 +795,117 @@ document.body.addEventListener("click",function(e){
   if(!draft.photo&&!confirm("Send without a photo?"))return;
   S.pending.push({id:uid(),taskId:T.id,label:T.label,tok:T.tok,note:draft.note,photo:draft.photo,ts:Date.now()});
   pushLog({type:"admin",title:"Submitted: "+T.label,meta:"waiting on approval"});
-  draft={task:null,photo:null,note:""};save();render();toast("Sent for approval");return;
+  draft={task:null,photo:null,note:""};save();render();toast("Sent for approval!");return;
  }
- if(a==="unlock"){
-  if($("#pin").value===ADMIN_PIN){unlocked=true;render();toast("Admin unlocked")}else toast("Wrong PIN");return;
- }
+ if(a==="unlock"){if($("#pin").value===ADMIN_PIN){unlocked=true;render();toast("Admin unlocked")}else toast("Wrong PIN");return;}
  if(a==="lock"){unlocked=false;render();return}
  if(a==="sub"){adminSub=b.dataset.k;$("#main").scrollTop=0;render();return}
  if(!unlocked&&["ok","no","quick","custom","buff","clearbuffs","streak","newday","tokens0","additem",
   "delitem","resetpools","givecard","addcard","newset","setactive","addtask","deltask","export","import",
-  "clearphotos","wipe","reveal"].indexOf(a)>-1){return}
+  "clearphotos","wipe","reveal"].indexOf(a)>-1)return;
  if(a==="ok"){
   var id=b.dataset.id,ix=-1;S.pending.forEach(function(p,i){if(p.id===id)ix=i});
   if(ix<0)return;var pn=S.pending[ix];
   var ov=document.querySelector('[data-adj="'+id+'"]');
-  var amt=ov&&ov.value!==""?parseInt(ov.value,10):pn.tok;
-  if(isNaN(amt))amt=pn.tok;
-  S.pending.splice(ix,1);
-  grantTokens(amt,pn.label,"approved from queue"+(pn.note?' &middot; "'+pn.note+'"':""),pn.photo);
-  return;
+  var amt=ov&&ov.value!==""?parseInt(ov.value,10):pn.tok;if(isNaN(amt))amt=pn.tok;
+  S.pending.splice(ix,1);grantTokens(amt,pn.label,"approved"+(pn.note?' &middot; "'+pn.note+'"':""),pn.photo);return;
  }
  if(a==="no"){
   var id2=b.dataset.id,ix2=-1;S.pending.forEach(function(p,i){if(p.id===id2)ix2=i});
   if(ix2<0)return;var pn2=S.pending[ix2];
   var why=prompt("Reason (she will see this):","need a clearer photo");
-  S.pending.splice(ix2,1);
-  pushLog({type:"reject",title:"Not approved: "+pn2.label,meta:why||"declined"});
+  S.pending.splice(ix2,1);pushLog({type:"reject",title:"Not approved: "+pn2.label,meta:why||"declined"});
   save();render();toast("Rejected and logged");return;
  }
- if(a==="quick"){var t=null;S.tasks.forEach(function(x){if(x.id===b.dataset.id)t=x});
-  if(t)grantTokens(t.tok,t.label,"quick grant");return}
- if(a==="custom"){
-  var ti=$("#cT").value.trim(),v=parseInt($("#cV").value,10);
+ if(a==="quick"){var qt=null;S.tasks.forEach(function(x){if(x.id===b.dataset.id)qt=x});if(qt)grantTokens(qt.tok,qt.label,"quick grant");return}
+ if(a==="custom"){var ti=$("#cT").value.trim(),v=parseInt($("#cV").value,10);
   if(!ti||isNaN(v))return toast("Need a title and a number");
-  if(v>=0){grantTokens(v,ti,$("#cM").value||"manual entry")}
-  else{S.tokens=Math.max(0,S.tokens+v);
-   pushLog({type:"prize",title:ti,meta:$("#cM").value||"manual deduction",value:""+v});save();render();toast("Logged")}
-  return;
- }
- if(a==="buff"){applyEffect(b.dataset.e);pushLog({type:"admin",title:"Buff applied: "+EFFECTS[b.dataset.e],meta:"admin"});
-  save();render();toast("Buff active");return}
+  if(v>=0)grantTokens(v,ti,$("#cM").value||"manual entry");
+  else{S.tokens=Math.max(0,S.tokens+v);pushLog({type:"prize",title:ti,meta:$("#cM").value||"manual deduction",value:""+v});save();render();toast("Logged")}
+  return;}
+ if(a==="buff"){applyEffect(b.dataset.e);pushLog({type:"admin",title:"Buff applied: "+EFFECTS[b.dataset.e],meta:"admin"});save();render();toast("Buff active");return}
  if(a==="clearbuffs"){S.buffs=[];save();render();toast("Buffs cleared");return}
  if(a==="streak"){var n=+b.dataset.n;S.streak=n===-99?0:Math.max(0,S.streak+n);save();render();return}
  if(a==="newday"){S.pomosToday=0;save();render();toast("Daily counters reset");return}
  if(a==="tokens0"){if(confirm("Set token balance to 0?")){S.tokens=0;save();render()}return}
- if(a==="additem"){
-  var pp=b.dataset.pool;
-  S.pools[pp].items.push({id:uid(),w:5,r:"COMMON",p:"New prize",d:"Describe it.",v:0,e:"none"});
-  save();render();return;
- }
- if(a==="delitem"){
-  if(!confirm("Delete this prize?"))return;
-  S.pools[b.dataset.pool].items.splice(+b.dataset.i,1);save();render();return;
- }
- if(a==="resetpools"){if(confirm("Reset all four prize tables to defaults?")){S.pools=defPools();save();render();toast("Pools reset")}return}
+ if(a==="additem"){S.pools[b.dataset.pool].items.push({id:uid(),w:5,r:"COMMON",p:"New prize",d:"Describe it.",v:0,e:"none"});save();render();return}
+ if(a==="delitem"){if(!confirm("Delete this prize?"))return;S.pools[b.dataset.pool].items.splice(+b.dataset.i,1);save();render();return}
+ if(a==="resetpools"){if(confirm("Reset all four prize tables?")){S.pools=defPools();save();render();toast("Pools reset")}return}
  if(a==="givecard"){S.active=+b.dataset.s;giveCard(+b.dataset.i);toast("Card granted");return}
- if(a==="addcard"){
-  var st=S.sets[+b.dataset.s];
-  st.cards.push({id:uid(),nm:"NEW CARD",ln:"subtitle",cls:["k","w","g","n"][st.cards.length%4],img:null,n:0});
-  save();render();return;
- }
- if(a==="newset"){
-  var s=defSet(S.sets.length+1);s.name="SET "+(S.sets.length+1);S.sets.push(s);save();render();toast("Set created");return;
- }
+ if(a==="addcard"){var st=S.sets[+b.dataset.s];st.cards.push({id:uid(),nm:"NEW CARD",ln:"subtitle",cls:["k","w","g","n"][st.cards.length%4],img:null,n:0});save();render();return}
+ if(a==="newset"){var ns=defSet(S.sets.length+1);ns.name="SET "+(S.sets.length+1);S.sets.push(ns);save();render();toast("Set created");return}
  if(a==="setactive"){S.active=+b.dataset.i;save();render();toast("Active set changed");return}
- if(a==="addtask"){S.tasks.push({id:uid(),label:"New task",tok:1,note:"proof needed",until:null});save();render();return}
+ if(a==="addtask"){S.tasks.push({id:uid(),label:"New task",tok:1,note:"proof needed",until:null,unlockAt:0});save();render();return}
  if(a==="deltask"){if(!confirm("Delete this task?"))return;S.tasks.splice(+b.dataset.i,1);save();render();return}
  if(a==="export"){$("#cfg").value=JSON.stringify(S);toast("Copy this somewhere safe");return}
- if(a==="import"){
-  try{var o=JSON.parse($("#cfg").value);if(!o.pools||!o.tasks)throw 0;S=o;S.v=VER;save();render();toast("Imported")}
-  catch(err){toast("That is not valid ae-QUEST JSON")}return;
- }
- if(a==="clearphotos"){S.log.forEach(function(l){l.photo=null});
-  S.pending.forEach(function(p){p.photo=null});save();render();toast("Photos cleared");return}
+ if(a==="import"){try{var o=JSON.parse($("#cfg").value);if(!o.pools||!o.tasks)throw 0;S=o;S.v=VER;
+  if(S.lifetimeTokens==null)S.lifetimeTokens=0;S.tasks.forEach(function(t){if(t.unlockAt==null)t.unlockAt=0;});
+  save();render();toast("Imported")}catch(err){toast("Not valid ae-QUEST JSON")}return;}
+ if(a==="clearphotos"){S.log.forEach(function(l){l.photo=null});S.pending.forEach(function(p){p.photo=null});save();render();toast("Photos cleared");return}
  if(a==="reveal"){S.pools[1].items.concat(S.pools[3].items,S.pools[5].items,S.pools[10].items)
   .forEach(function(i){if(i.s&&S.revealed.indexOf(i.id)<0)S.revealed.push(i.id)});save();render();toast("Secrets revealed");return}
- if(a==="wipe"){if(confirm("Wipe all data and start over?")){localStorage.removeItem(DB.key);location.reload()}return}
+ if(a==="wipe"){if(confirm("Wipe all data and start over?")){
+  if(_docRef)_docRef.delete().catch(function(){});
+  localStorage.removeItem("aequest_v3");location.reload()}return}
 });
 document.body.addEventListener("change",function(e){
  var el=e.target,d=el.dataset;
- if(d.up){
-  var f=el.files&&el.files[0];if(!f)return;
-  shrink(f,function(url){
-   if(d.up==="proof"){draft.photo=url;render()}
-   if(d.up==="card"){S.sets[+d.s].cards[+d.i].img=url;save();render();toast("Image saved")}
-  });return;
- }
+ if(d.up){var f=el.files&&el.files[0];if(!f)return;
+  shrink(f,function(url){if(d.up==="proof"){draft.photo=url;render()}
+   if(d.up==="card"){S.sets[+d.s].cards[+d.i].img=url;save();render();toast("Image saved")}});return;}
  if(d.d==="note"){draft.note=el.value;return}
  if(d.ep){var P=S.pools[d.ep];
   if(d.f==="cardChance")P.cardChance=Math.min(1,Math.max(0,parseFloat(el.value)||0));
   else if(d.f==="pity")P.pity=Math.max(1,parseInt(el.value,10)||1);
-  else P[d.f]=el.value;
-  save();render();return}
+  else P[d.f]=el.value;save();render();return}
  if(d.ei){var it=S.pools[d.ei].items[+d.i];if(!it)return;
   if(d.f==="w")it.w=Math.max(0,parseFloat(el.value)||0);
   else if(d.f==="v")it.v=Math.max(0,parseFloat(el.value)||0);
   else if(d.f==="s")it.s=el.value==="1"?1:0;
-  else it[d.f]=el.value;
-  save();render();return}
+  else it[d.f]=el.value;save();render();return}
  if(d.es){S.sets[+d.es][d.f]=el.value;save();render();return}
  if(d.ec){S.sets[+d.ec].cards[+d.i][d.f]=el.value;save();render();return}
  if(d.et){var t=S.tasks[+d.et];if(!t)return;
   if(d.f==="tok")t.tok=parseInt(el.value,10)||0;
-  else if(d.f==="days"){var v=parseInt(el.value,10);t.until=(!v||v<=0)?null:Date.now()+v*864e5}
-  else t[d.f]=el.value;
-  save();render();return}
+  else if(d.f==="days"){var dv=parseInt(el.value,10);t.until=(!dv||dv<=0)?null:Date.now()+dv*864e5;}
+  else if(d.f==="unlockAt")t.unlockAt=Math.max(0,parseInt(el.value,10)||0);
+  else t[d.f]=el.value;save();render();return}
 });
-render();
+
+/* ==========================================================
+   PIN WALL
+   ========================================================== */
+var _pin="";
+function _pinUpdate(){for(var i=0;i<4;i++){var d=document.getElementById("pd"+i);if(d)d.className="pin-dot"+(_pin.length>i?" on":"");}}
+
+document.getElementById("pin-pad").addEventListener("click",function(e){
+ var k=e.target.closest("[data-k]");if(!k)return;
+ var v=k.dataset.k;
+ document.getElementById("pin-err").textContent="";
+ if(v==="clr")_pin="";
+ else if(v==="del")_pin=_pin.slice(0,-1);
+ else if(_pin.length<4)_pin+=v;
+ _pinUpdate();
+ if(_pin.length===4){
+  if(_pin===APP_PIN){
+   try{sessionStorage.setItem("aequest_ok","1")}catch(e){}
+   document.getElementById("pinwall").style.display="none";
+   document.getElementById("app").style.display="flex";
+   initApp();
+  } else {
+   document.getElementById("pin-err").textContent="Wrong PIN - try again";
+   setTimeout(function(){_pin="";_pinUpdate();},600);
+  }
+ }
+});
+
+/* ---------- Startup ---------- */
+var _skip=false;try{_skip=sessionStorage.getItem("aequest_ok")==="1";}catch(e){}
+if(_skip){
+ document.getElementById("pinwall").style.display="none";
+ document.getElementById("app").style.display="flex";
+ initApp();
+}
 </script>
 </body>
 </html>
