@@ -6,6 +6,38 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>ae-QUEST</title>
+<script type="module" id="fbinit">
+  import { initializeApp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, onSnapshot }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  
+  // expose to non-module script
+  window._setDoc   = setDoc;
+  window._doc      = doc;
+  window._getDoc   = getDoc;
+  window._onSnap   = onSnapshot;
+  window._signIn   = signInWithEmailAndPassword;
+  window._onAuth   = onAuthStateChanged;
+  
+  // ── PASTE YOUR FIREBASE CONFIG HERE ──────────────────────────────
+  const firebaseConfig = {
+    apiKey: "AIzaSyDDkhh9SGLJLEg7IA9HjoPSGDuhOfDYFXI",
+    authDomain: "gachatini.firebaseapp.com",
+    databaseURL: "https://gachatini-default-rtdb.firebaseio.com",
+    projectId: "gachatini",
+    storageBucket: "gachatini.firebasestorage.app",
+    messagingSenderId: "150375258373",
+    appId: "1:150375258373:web:8b5ec2fdd7a5b7033aff6c"
+  };
+  // ─────────────────────────────────────────────────────────────────
+
+  const _app  = initializeApp(firebaseConfig);
+  window._db  = getFirestore(_app);
+  window._auth = getAuth(_app);
+</script>
 <style>
 :root{--line:rgba(255,255,255,.13);--card:rgba(255,255,255,.06);--txt:#f2f0ff;--dim:#a099c4;
 --neon:#00e5ff;--pink:#ff3d97;--purp:#8b5cf6;--gold:#ffd76e;--safe:env(safe-area-inset-bottom,0px)}
@@ -125,26 +157,6 @@ backdrop-filter:blur(14px);border-radius:13px;padding:11px 13px;font-size:12px;z
 .filerow{position:relative;overflow:hidden;display:block}
 .filerow input[type=file]{position:absolute;inset:0;opacity:0;width:100%;height:100%}
 </style>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, getDoc, setDoc, onSnapshot }
-    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged }
-    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDDkhh9SGLJLEg7IA9HjoPSGDuhOfDYFXI",
-    authDomain: "gachatini.firebaseapp.com",
-    databaseURL: "https://gachatini-default-rtdb.firebaseio.com",
-    projectId: "gachatini",
-    storageBucket: "gachatini.firebasestorage.app",
-    messagingSenderId: "150375258373",
-    appId: "1:150375258373:web:8b5ec2fdd7a5b7033aff6c"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const auth = getAuth(app);
 </head>
 <body>
 <div id="app">
@@ -180,6 +192,13 @@ backdrop-filter:blur(14px);border-radius:13px;padding:11px 13px;font-size:12px;z
      users/{uid}/pending/{id}   -> pending approvals (photo in Storage)
      admins/{uid}               -> existence = admin
    ===================================================================== */
+var setDoc   = function(){ return window._setDoc.apply(this,arguments); };
+var doc      = function(){ return window._doc.apply(this,arguments); };
+var getDoc   = function(){ return window._getDoc.apply(this,arguments); };
+var onSnapshot = function(){ return window._onSnap.apply(this,arguments); };
+var signInWithEmailAndPassword = function(){ return window._signIn.apply(this,arguments); };
+var onAuthStateChanged = function(){ return window._onAuth.apply(this,arguments); };
+  
 var VER = 3;
 var ADMIN_PIN = "0420";   // client-side only; real gate is Firestore rules
 
@@ -262,14 +281,64 @@ function defState(){return{v:VER,tokens:0,streak:0,pomosToday:0,shards:0,setsDon
  pity:{1:0,3:0,5:0,10:0},buffs:[],revealed:[],pools:defPools(),tasks:defTasks(),
  sets:[defSet(1)],active:0,pending:[],log:[],seq:100};}
 
-/* ---------- storage ---------- */
-var DB={key:"aequest_v3",
- load:function(){try{return JSON.parse(localStorage.getItem(this.key))}catch(e){return null}},
- save:function(s){try{localStorage.setItem(this.key,JSON.stringify(s));return true}
-   catch(e){toast("Storage full. Clear old photos in Admin > Tools.");return false}}};
-var S=DB.load();
-if(!S||S.v!==VER){S=defState();}
-function save(){DB.save(S);}
+/* ---------- storage (Firebase) ---------- */
+var S = defState();          // temporary until Firebase loads
+var _fbUid = null;           // set once user logs in
+
+/* async write to Firestore — called wherever save() was called before */
+function save() {
+  if (!_fbUid) return;       // not logged in yet, skip
+  setDoc(doc(window._db, "users", _fbUid), JSON.parse(JSON.stringify(S)))
+    .catch(function(e){ console.error("Save failed:", e); });
+}
+
+/* show a login screen if Firebase auth hasn't loaded yet */
+function showLogin(errMsg) {
+  document.getElementById("main").innerHTML =
+    '<div class="sec-t">SIGN IN</div>' +
+    '<div class="box">' +
+    (errMsg ? '<div class="hint" style="color:#ff8fb8;margin-bottom:8px">' + errMsg + '</div>' : '') +
+    '<label class="f">EMAIL</label>' +
+    '<input id="li_email" type="email" autocomplete="username" placeholder="your@email.com">' +
+    '<label class="f">PASSWORD</label>' +
+    '<input id="li_pass" type="password" autocomplete="current-password" placeholder="••••••••">' +
+    '<button class="btn" id="li_btn">SIGN IN</button></div>';
+
+  document.getElementById("li_btn").onclick = function() {
+    var em = document.getElementById("li_email").value.trim();
+    var pw = document.getElementById("li_pass").value;
+    signInWithEmailAndPassword(window._auth, em, pw)
+      .catch(function(e){ showLogin("Wrong email or password."); });
+  };
+}
+
+/* wait for Firebase to tell us who is logged in */
+onAuthStateChanged(window._auth, function(user) {
+  if (!user) { showLogin(); return; }
+
+  _fbUid = user.uid;
+
+  /* load their data from Firestore */
+  getDoc(doc(window._db, "users", _fbUid)).then(function(snap) {
+    if (snap.exists()) {
+      S = snap.data();
+    } else {
+      S = defState();
+      save();          // first-time user: write defaults to Firestore
+    }
+
+    /* migrate old saves that lack new fields */
+    if (S.lifetimeTokens == null) S.lifetimeTokens = 0;
+    S.tasks.forEach(function(t){ if (t.unlockAt == null) t.unlockAt = 0; });
+
+    // render();          // now safe to draw the app
+
+    /* live listener — if you approve from your phone, her screen updates */
+    onSnapshot(doc(window._db, "users", _fbUid), function(snap) {
+      if (snap.exists()) { S = snap.data(); render(); }
+    });
+  });
+});
 
 /* ---------- effects ---------- */
 var EFFECTS={none:"- none -",m15_24:"x1.5 tokens / 24h",m2_24:"x2 tokens / 24h",m2_72:"x2 tokens / 72h",
