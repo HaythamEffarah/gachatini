@@ -1,793 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>ae-QUEST</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
-
-  :root{
-    --bg:#14141f;
-    --bg-alt:#1b1b29;
-    --surface:#20202f;
-    --surface-2:#262638;
-    --line:#33334a;
-    --text:#f1f0f6;
-    --text-dim:#9a97ae;
-    --pink:#ff4fa3;
-    --cyan:#4fd8ff;
-    --gold:#ffc857;
-    --violet:#8b7cf6;
-  }
-
-  * { box-sizing:border-box; }
-
-  #gacha-root{
-    font-family:'Inter', system-ui, sans-serif;
-    background:
-      radial-gradient(60% 50% at 15% 0%, rgba(255,79,163,0.10), transparent 60%),
-      radial-gradient(50% 45% at 100% 10%, rgba(79,216,255,0.10), transparent 60%),
-      var(--bg);
-    color:var(--text);
-    min-height:100vh;
-    min-height:100dvh;
-    padding:calc(28px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(60px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
-    line-height:1.45;
-    -webkit-tap-highlight-color:transparent;
-    overscroll-behavior-y:contain;
-  }
-
-  #gacha-root button{
-    touch-action:manipulation;
-    -webkit-tap-highlight-color:transparent;
-  }
-  #gacha-root input{
-    -webkit-tap-highlight-color:transparent;
-  }
-
-  #gacha-root .wrap{ max-width:640px; margin:0 auto; }
-
-  #gacha-root h1,#gacha-root h2,#gacha-root h3{
-    font-family:'Space Grotesk', system-ui, sans-serif;
-    margin:0;
-  }
-
-  /* ---- Hero ---- */
-  .hero{ text-align:center; padding:8px 0 24px; }
-  .hero .eyebrow{ font-size:13px; color:var(--text-dim); margin-bottom:6px; }
-  .hero .points{
-    font-size:64px; font-weight:700; letter-spacing:-0.02em;
-    background:linear-gradient(90deg, var(--pink), var(--cyan));
-    -webkit-background-clip:text; background-clip:text; color:transparent;
-    line-height:1;
-  }
-  .hero .points-label{ font-size:14px; color:var(--text-dim); margin-top:6px; }
-  .hero .streak{
-    display:inline-flex; align-items:center; gap:6px; margin-top:14px; font-size:13px;
-    color:var(--gold); background:rgba(255,200,87,0.1); border:1px solid rgba(255,200,87,0.25);
-    padding:5px 12px; border-radius:999px;
-  }
-
-  /* ---- Section ---- */
-  .section{
-    background:var(--surface); border:1px solid var(--line); border-radius:16px;
-    padding:20px; margin-bottom:16px;
-  }
-  .section h2{
-    font-size:16px; font-weight:600; margin-bottom:14px;
-    display:flex; align-items:center; justify-content:space-between;
-  }
-  .section h2 .badge{
-    font-family:'Inter', sans-serif; font-weight:600; font-size:11px;
-    color:var(--bg); background:var(--gold); padding:2px 8px; border-radius:999px;
-  }
-
-  /* ---- Log grid ---- */
-  .log-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .log-btn{
-    background:var(--surface-2); border:1px solid var(--line); border-radius:12px;
-    padding:14px 12px; color:var(--text); font-family:'Inter', sans-serif; font-size:14px;
-    font-weight:500; text-align:left; cursor:pointer;
-    transition:transform 0.12s ease, border-color 0.12s ease;
-    display:flex; flex-direction:column; gap:4px;
-    min-height:44px;
-  }
-  .log-btn:active{ transform:scale(0.97); border-color:var(--pink); }
-  @media (hover:hover) and (pointer:fine){
-    .log-btn:hover{ border-color:var(--pink); }
-  }
-  .log-btn .pts{ font-size:12px; color:var(--cyan); }
-  .log-hint{ font-size:12px; color:var(--text-dim); margin-top:10px; }
-
-  /* ---- Tiers ---- */
-  .tier-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
-  .tier-card{
-    border-radius:14px; padding:16px 14px; cursor:pointer; border:1px solid var(--line);
-    background:var(--surface-2); position:relative; overflow:hidden;
-    transition:transform 0.12s ease;
-    min-height:44px;
-  }
-  .tier-card:active{ transform:scale(0.97); }
-  @media (hover:hover) and (pointer:fine){
-    .tier-card:hover{ transform:translateY(-2px); }
-  }
-  .tier-card.disabled{ opacity:0.4; cursor:not-allowed; transform:none; }
-  .tier-card .glow{ position:absolute; inset:0; opacity:0.5; pointer-events:none; }
-  .tier-card .name{ font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:15px; position:relative; }
-  .tier-card .cost{ font-size:12px; color:var(--text-dim); margin-top:4px; position:relative; }
-  .tier-common .glow{ background:radial-gradient(circle at 30% 20%, rgba(79,216,255,0.35), transparent 70%); }
-  .tier-rare .glow{ background:radial-gradient(circle at 30% 20%, rgba(139,124,246,0.4), transparent 70%); }
-  .tier-epic .glow{ background:radial-gradient(circle at 30% 20%, rgba(255,79,163,0.4), transparent 70%); }
-  .tier-legendary .glow{ background:radial-gradient(circle at 30% 20%, rgba(255,200,87,0.45), transparent 70%); }
-
-  /* ---- Reveal ---- */
-  .reveal-stage{ display:flex; justify-content:center; padding:18px 0 4px; }
-  .reveal-card{ width:200px; height:120px; perspective:800px; }
-  .reveal-inner{
-    position:relative; width:100%; height:100%;
-    transform-style:preserve-3d; -webkit-transform-style:preserve-3d;
-    transition:transform 0.6s cubic-bezier(.2,.8,.2,1);
-  }
-  .reveal-inner.flipped{ transform:rotateY(180deg); }
-  .reveal-face{
-    position:absolute; inset:0; border-radius:14px;
-    display:flex; align-items:center; justify-content:center; text-align:center;
-    padding:14px;
-    backface-visibility:hidden; -webkit-backface-visibility:hidden;
-    border:1px solid var(--line);
-  }
-  .reveal-front{
-    background:var(--bg-alt);
-    font-size:13px; color:var(--text-dim);
-    z-index:2;
-  }
-  .reveal-back{
-    transform:rotateY(180deg);
-    background:linear-gradient(135deg, #2a1a30, #14232f);
-    flex-direction:column; gap:6px;
-    z-index:1;
-  }
-  .reveal-back .tier-tag{ font-size:11px; color:var(--gold); font-weight:600; }
-  .reveal-back .item-name{ font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:16px; color:var(--text); }
-
-  /* ---- Pending queue ---- */
-  .pending-row{
-    display:flex; gap:12px; align-items:center; padding:10px 0;
-    border-bottom:1px solid var(--line);
-  }
-  .pending-row:last-child{ border-bottom:none; }
-  .pending-thumb{
-    width:52px; height:52px; border-radius:8px; object-fit:cover; flex-shrink:0;
-    border:1px solid var(--line); background:var(--surface-2);
-  }
-  .pending-info{ flex:1; min-width:0; }
-  .pending-info .label{ font-size:13px; font-weight:500; }
-  .pending-info .meta{ font-size:11px; color:var(--text-dim); }
-  .pending-actions{ display:flex; gap:6px; flex-shrink:0; }
-  .approve-btn, .reject-btn{
-    border-radius:8px; padding:9px 12px; font-size:13px; cursor:pointer; border:1px solid var(--line);
-    min-height:40px; touch-action:manipulation; -webkit-tap-highlight-color:transparent;
-  }
-  .approve-btn{ background:rgba(79,216,255,0.15); color:var(--cyan); border-color:rgba(79,216,255,0.4); }
-  .reject-btn{ background:rgba(255,79,163,0.1); color:var(--pink); border-color:rgba(255,79,163,0.3); }
-  .pending-empty{ color:var(--text-dim); font-size:13px; text-align:center; padding:12px 0; }
-
-  /* ---- History ---- */
-  .history-list{ display:flex; flex-direction:column; gap:8px; }
-  .history-row{
-    display:flex; gap:10px; align-items:center; font-size:13px; padding:8px 0;
-    border-bottom:1px solid var(--line);
-  }
-  .history-row:last-child{ border-bottom:none; }
-  .history-thumb{
-    width:34px; height:34px; border-radius:6px; object-fit:cover; flex-shrink:0;
-    border:1px solid var(--line);
-  }
-  .history-main{ flex:1; min-width:0; }
-  .history-row .who{ color:var(--text-dim); font-size:12px; }
-  .history-amt{ font-weight:600; white-space:nowrap; }
-  .status-approved{ color:var(--cyan); }
-  .status-rejected{ color:var(--text-dim); text-decoration:line-through; }
-  .status-pending{ color:var(--gold); }
-  .history-empty{ color:var(--text-dim); font-size:13px; text-align:center; padding:12px 0; }
-
-  /* ---- settings ---- */
-  .settings-toggle{
-    background:none; border:none; color:var(--text-dim); font-size:13px;
-    cursor:pointer; text-decoration:underline; padding:0;
-  }
-  .settings-body{ margin-top:14px; display:flex; flex-direction:column; gap:14px; }
-  .field-row{ display:flex; gap:8px; align-items:center; }
-  .field-row label{ font-size:12px; color:var(--text-dim); width:140px; flex-shrink:0; }
-  .field-row input{
-    flex:1; background:var(--surface-2); border:1px solid var(--line); border-radius:8px;
-    color:var(--text); padding:9px 10px; font-size:16px; font-family:'Inter', sans-serif;
-  }
-  .tier-edit{ border:1px solid var(--line); border-radius:10px; padding:10px; }
-  .tier-edit-title{ font-size:13px; font-weight:600; margin-bottom:8px; }
-  .item-edit-row{ display:flex; gap:6px; margin-bottom:6px; }
-  .item-edit-row input{
-    flex:1; font-size:16px; background:var(--surface-2); border:1px solid var(--line);
-    border-radius:8px; color:var(--text); padding:9px 10px; font-family:'Inter', sans-serif;
-  }
-  .small-btn{
-    background:var(--surface-2); border:1px solid var(--line); color:var(--text-dim);
-    border-radius:8px; padding:5px 9px; font-size:12px; cursor:pointer;
-  }
-  .small-btn:hover{ color:var(--text); border-color:var(--pink); }
-  .save-note{ font-size:12px; color:var(--text-dim); }
-
-  .toast{
-    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
-    background:var(--surface-2); border:1px solid var(--pink);
-    padding:10px 18px; border-radius:999px; font-size:13px;
-    opacity:0; transition:opacity 0.25s ease; pointer-events:none; z-index:50;
-  }
-  .toast.show{ opacity:1; }
-
-  @media (max-width:420px){
-    .hero .points{ font-size:48px; }
-    .log-grid{ grid-template-columns:1fr; }
-    .tier-grid{ grid-template-columns:1fr 1fr; }
-  }
+:root{--line:rgba(255,255,255,.13);--card:rgba(255,255,255,.06);--txt:#f2f0ff;--dim:#a099c4;
+--neon:#00e5ff;--pink:#ff3d97;--purp:#8b5cf6;--gold:#ffd76e;--safe:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-serif;
+background:radial-gradient(120% 80% at 50% -10%,#2a1150 0%,#0a0a14 55%,#05050a 100%);color:var(--txt);overflow:hidden}
+#app{display:flex;flex-direction:column;height:100%;max-width:480px;margin:0 auto;position:relative}
+header{padding:12px 16px 6px;flex:0 0 auto}
+.brand{display:flex;align-items:center;justify-content:space-between}
+.logo{font-weight:800;letter-spacing:.22em;font-size:14px;background:linear-gradient(90deg,var(--neon),var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}
+.who{font-size:9.5px;color:var(--dim);letter-spacing:.16em}
+.balance{margin-top:8px;padding:13px 15px;border-radius:18px;position:relative;overflow:hidden;
+background:linear-gradient(135deg,rgba(0,229,255,.16),rgba(255,61,151,.16));border:1px solid var(--line)}
+.bal-row{display:flex;align-items:flex-end;gap:9px}
+.bal-n{font-size:40px;font-weight:800;line-height:1}
+.bal-l{font-size:10.5px;color:var(--dim);letter-spacing:.2em;padding-bottom:5px}
+.chips{display:flex;gap:5px;margin-top:9px;flex-wrap:wrap}
+.chip{font-size:9.5px;padding:5px 8px;border-radius:99px;background:rgba(0,0,0,.35);border:1px solid var(--line)}
+.chip.hot{border-color:var(--gold);color:var(--gold)}
+main{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 16px 96px}
+nav{position:absolute;bottom:0;left:0;right:0;display:flex;background:rgba(8,8,16,.9);
+backdrop-filter:blur(18px);border-top:1px solid var(--line);padding-bottom:var(--safe);z-index:40}
+nav button{flex:1;background:none;border:0;color:var(--dim);font-size:9px;letter-spacing:.1em;
+padding:8px 0 10px;display:flex;flex-direction:column;align-items:center;gap:3px;font-weight:700;position:relative}
+nav button .ic{font-size:18px;line-height:1}
+nav button.on{color:var(--txt)}
+nav button.on .ic{filter:drop-shadow(0 0 8px var(--neon))}
+.badge{position:absolute;top:4px;right:calc(50% - 20px);background:var(--pink);color:#fff;font-size:8.5px;
+min-width:15px;height:15px;border-radius:99px;display:flex;align-items:center;justify-content:center;font-weight:800}
+.sec-t{font-size:9.5px;letter-spacing:.22em;color:var(--dim);margin:16px 0 7px;font-weight:800}
+.pool{border-radius:20px;padding:14px;margin-bottom:10px;border:1px solid var(--line);overflow:hidden}
+.p1{background:linear-gradient(120deg,#14243a,#0d1420)}.p3{background:linear-gradient(120deg,#0f2f3a,#0c1a24)}
+.p5{background:linear-gradient(120deg,#3a1140,#180c24)}.p10{background:linear-gradient(120deg,#4a1230,#2a0d3a 60%,#12061c)}
+.pool h3{margin:0;font-size:15.5px;font-weight:800}
+.sub{font-size:11px;color:var(--dim);margin-top:3px;line-height:1.45}
+.rowb{display:flex;align-items:center;justify-content:space-between;margin-top:11px;gap:10px}
+.spin{border:0;border-radius:14px;padding:11px 15px;font-weight:800;font-size:12.5px;letter-spacing:.05em;
+background:linear-gradient(90deg,var(--neon),var(--purp));color:#08131a;font-family:inherit}
+.spin.g{background:linear-gradient(90deg,var(--gold),var(--pink));color:#2a0713}
+.spin:disabled{background:#22222e;color:#5a5a70}
+.pity{font-size:9px;color:var(--dim);letter-spacing:.08em}
+.bar{height:4px;border-radius:9px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:5px;width:110px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--pink),var(--gold))}
+.oddsbtn{margin-top:9px;width:100%;background:rgba(0,0,0,.28);border:1px solid var(--line);color:var(--dim);
+border-radius:11px;padding:8px;font-size:10px;letter-spacing:.14em;font-weight:700;font-family:inherit}
+.odds{margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
+.orow{display:flex;justify-content:space-between;gap:8px;padding:5px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,.05)}
+.orow .n{flex:1}.orow .pct{font-weight:800;font-variant-numeric:tabular-nums}
+.orow small{display:block;color:var(--dim);font-size:9.5px;margin-top:1px}
+.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.pc{border-radius:16px;border:1px solid var(--line);position:relative;aspect-ratio:.68;overflow:hidden;
+background-size:cover;background-position:center}
+.pc .face{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:9px;
+background:linear-gradient(transparent 45%,rgba(0,0,0,.72))}
+.pc .nm{font-weight:800;font-size:13px}
+.pc .rl{font-size:8.5px;letter-spacing:.14em;color:rgba(255,255,255,.75)}
+.pc .ct{position:absolute;top:7px;right:8px;font-size:9px;background:rgba(0,0,0,.55);padding:3px 7px;border-radius:99px}
+.pc.locked{filter:grayscale(1) brightness(.4)}
+.pc.locked .face:after{content:"?";position:absolute;top:36%;left:50%;transform:translate(-50%,-50%);font-size:30px;font-weight:800;opacity:.7}
+.k{background-image:linear-gradient(160deg,#ff7ac2,#7b2ff7)}.w{background-image:linear-gradient(160deg,#8fe9ff,#2b6bff)}
+.g{background-image:linear-gradient(160deg,#ffd88a,#ff5f6d)}.n{background-image:linear-gradient(160deg,#b6ff9c,#00b3a4)}
+.box{border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:10px;background:rgba(255,255,255,.035)}
+.box.dash{border-style:dashed}
+.hint{font-size:10.5px;color:var(--dim);line-height:1.55}
+.li{padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06);position:relative;padding-left:14px}
+.li:before{content:"";position:absolute;left:0;top:14px;width:7px;height:7px;border-radius:99px;background:var(--purp)}
+.li.earn:before{background:var(--neon)}.li.prize:before{background:var(--gold)}
+.li.card:before{background:var(--pink)}.li.reject:before{background:#ff5f6d}
+.li .t{font-size:13px;font-weight:600;padding-right:52px}
+.li .m{font-size:10px;color:var(--dim);margin-top:2px}
+.li .v{position:absolute;right:0;top:10px;font-size:13px;font-weight:800}
+input,select,textarea{width:100%;background:rgba(255,255,255,.07);border:1px solid var(--line);color:var(--txt);
+border-radius:11px;padding:10px 11px;font-size:15px;margin-top:6px;font-family:inherit;-webkit-appearance:none}
+textarea{min-height:70px;font-size:12px}
+label.f{display:block;font-size:9.5px;letter-spacing:.12em;color:var(--dim);margin-top:9px;font-weight:700}
+.btn{width:100%;border:0;border-radius:12px;padding:12px;font-weight:800;font-size:13.5px;margin-top:9px;
+background:linear-gradient(90deg,var(--pink),var(--purp));color:#fff;font-family:inherit;letter-spacing:.04em}
+.btn.ghost{background:rgba(255,255,255,.08);border:1px solid var(--line);color:var(--txt)}
+.btn.ok{background:linear-gradient(90deg,#00e5ff,#22c55e);color:#04140c}
+.btn.no{background:rgba(255,95,109,.18);border:1px solid rgba(255,95,109,.5);color:#ffb3ba}
+.btn.sm{padding:9px;font-size:11.5px;margin-top:6px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.q{border:1px solid var(--line);background:var(--card);border-radius:13px;padding:10px 9px;text-align:left;
+color:var(--txt);font-family:inherit}
+.q b{display:block;font-size:12px}.q span{font-size:9.5px;color:var(--dim)}
+.q.on{border-color:var(--neon);background:rgba(0,229,255,.13)}
+.thumb{width:100%;border-radius:12px;margin-top:7px;display:block}
+.pend{border:1px solid var(--line);border-radius:15px;padding:11px;margin-bottom:9px;background:rgba(255,255,255,.04)}
+.pthumb{width:72px;height:72px;object-fit:cover;border-radius:10px;float:left;margin:0 10px 6px 0}
+.item{border:1px solid var(--line);border-radius:13px;padding:9px;margin-top:7px;background:rgba(0,0,0,.22)}
+.tag{display:inline-block;font-size:8.5px;letter-spacing:.12em;padding:3px 6px;border-radius:99px;border:1px solid var(--line);color:var(--dim);margin-right:4px}
+.buffbar{display:flex;flex-direction:column;gap:6px}
+.buff{display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:9px 11px;border-radius:12px;
+background:linear-gradient(90deg,rgba(123,255,207,.16),rgba(139,92,246,.16));border:1px solid rgba(123,255,207,.4)}
+.buff b{font-size:11.5px}
+#rev{position:absolute;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:22px;
+background:radial-gradient(60% 50% at 50% 45%,rgba(120,40,200,.55),rgba(4,4,10,.97));backdrop-filter:blur(6px)}
+#rev.show{display:flex}
+.revcard{width:100%;max-width:330px;text-align:center}
+.orb{width:126px;height:126px;border-radius:50%;margin:0 auto 16px;
+background:conic-gradient(from 0deg,var(--neon),var(--pink),var(--gold),var(--neon));
+animation:sp 1s linear infinite;box-shadow:0 0 55px rgba(255,61,151,.5)}
+@keyframes sp{to{transform:rotate(360deg)}}
+.prizebox{border-radius:20px;padding:20px 17px;border:1px solid var(--line);
+background:linear-gradient(150deg,rgba(255,255,255,.13),rgba(255,255,255,.03));animation:pop .4s cubic-bezier(.2,1.5,.4,1)}
+@keyframes pop{from{transform:scale(.75);opacity:0}to{transform:scale(1);opacity:1}}
+.rr{font-size:9.5px;letter-spacing:.26em;font-weight:800}
+.rp{font-size:20px;font-weight:800;margin:8px 0 6px;line-height:1.25}
+.rd{font-size:12px;color:var(--dim);line-height:1.5}
+.pcpull{margin-top:13px;padding:11px;border-radius:13px;background:rgba(255,61,151,.16);
+border:1px solid rgba(255,61,151,.4);font-size:12px}
+.toast{position:absolute;bottom:78px;left:16px;right:16px;background:rgba(255,255,255,.14);border:1px solid var(--line);
+backdrop-filter:blur(14px);border-radius:13px;padding:11px 13px;font-size:12px;z-index:70;display:none}
+.toast.show{display:block;animation:pop .3s}
+.filerow{position:relative;overflow:hidden;display:block}
+.filerow input[type=file]{position:absolute;inset:0;opacity:0;width:100%;height:100%}
 </style>
-
-<div id="gacha-root">
-  <div class="wrap">
-    <div class="hero">
-      <div class="eyebrow">approved token count</div>
-      <h1 class="points" id="pointsDisplay">0</h1>
-      <div class="points-label">tokens available</div>
-      <div class="streak" id="streakBadge" style="display:none;"></div>
-    </div>
-
-    <div class="section">
-      <h2>Log a win</h2>
-      <div class="log-grid" id="logGrid"></div>
-      <div class="log-hint">Tap an action, then attach a photo — it's queued for review below until approved.</div>
-      <input type="file" id="photoInput" accept="image/*" style="display:none;">
-    </div>
-
-    <div class="section">
-      <h2>Needs review <span class="badge" id="pendingCount" style="display:none;"></span></h2>
-      <div id="pendingList"></div>
-    </div>
-
-    <div class="section">
-      <h2>Pull</h2>
-      <div class="tier-grid" id="tierGrid"></div>
-      <div class="reveal-stage" id="revealStage" style="display:none;">
-        <div class="reveal-card">
-          <div class="reveal-inner" id="revealInner">
-            <div class="reveal-face reveal-front" id="revealFront">tap a banner to pull</div>
-            <div class="reveal-face reveal-back">
-              <div class="tier-tag" id="revealTierTag"></div>
-              <div class="item-name" id="revealItemName"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="section">
-      <h2>Recent activity</h2>
-      <div class="history-list" id="historyList"></div>
-    </div>
-
-    <div class="section">
-      <h2><span></span><button class="settings-toggle" id="settingsToggle">edit rewards &amp; point values</button></h2>
-      <div class="settings-body" id="settingsBody" style="display:none;"></div>
+</head>
+<body>
+<div id="app">
+<header>
+  <div class="brand"><div class="logo">ae-QUEST</div><div class="who" id="mode">LOCAL DEMO</div></div>
+  <div class="balance">
+    <div class="bal-row"><div class="bal-n" id="bal">0</div><div class="bal-l">SYNK TOKENS</div></div>
+    <div class="chips">
+      <span class="chip" id="chStreak"></span><span class="chip" id="chPomo"></span>
+      <span class="chip" id="chMult"></span><span class="chip" id="chCards"></span><span class="chip" id="chShard"></span>
     </div>
   </div>
+</header>
+<main id="main"></main>
+<nav id="nav">
+  <button data-tab="spin" class="on"><span class="ic">&#127920;</span>GACHA</button>
+  <button data-tab="cards"><span class="ic">&#127183;</span>KWANGYA</button>
+  <button data-tab="submit"><span class="ic">&#128248;</span>SUBMIT</button>
+  <button data-tab="log"><span class="ic">&#128220;</span>LOG</button>
+  <button data-tab="admin"><span class="ic">&#128273;</span>ADMIN</button>
+</nav>
+<div id="rev"></div>
+<div class="toast" id="toast"></div>
 </div>
 
-<div class="toast" id="toast"></div>
-
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-
 <script>
-// ---- Firebase config ----
-// Fill this in with your own project's config from the Firebase console
-// (Project settings -> General -> Your apps -> SDK setup and configuration).
-const firebaseConfig = {
-  apiKey: "AIzaSyDDkhh9SGLJLEg7IA9HjoPSGDuhOfDYFXI",
-  databaseURL: "https://gachatini-default-rtdb.firebaseio.com",
-  projectId: "gachatini"
-};
-</script>
+/* =====================================================================
+   ae-QUEST v3 — gamified productivity gacha
+   Storage: localStorage (demo). Swap DB.load/DB.save for Firestore.
+   Firestore shape:
+     users/{uid}                -> whole S object (minus log)
+     users/{uid}/log/{autoId}   -> log entries
+     users/{uid}/pending/{id}   -> pending approvals (photo in Storage)
+     admins/{uid}               -> existence = admin
+   ===================================================================== */
+var VER = 3;
+var ADMIN_PIN = "0420";   // client-side only; real gate is Firestore rules
 
-<script>
-(function(){
-  let state = null;
-  let saving = false;
-  let pendingActionType = null;
-  let dbRef = null;
-  let firebaseReady = false;
+/* ---------- default config ---------- */
+function defPools(){return{
+1:{name:"REAL WORLD",tag:"1 TOKEN",cardChance:.15,pity:10,
+   blurb:"Micro-treats and buffs. Cheap, frequent dopamine.",items:[
+ {id:"a1",w:20,r:"BUFF",p:"x1.5 Token Day",d:"Every token you earn for the next 24h is worth 1.5x.",v:0,e:"m15_24"},
+ {id:"a2",w:14,r:"BUFF",p:"Pomo Bounty",d:"Your next 3 pomodoros pay +1 extra token each.",v:0,e:"bounty3"},
+ {id:"a3",w:10,r:"BUFF",p:"Free Respin",d:"This pull is refunded. Spin again on the house.",v:0,e:"spin1"},
+ {id:"a4",w:8,r:"RARE",p:"Guaranteed Photocard",d:"A photocard drops for sure on this pull.",v:0,e:"card1"},
+ {id:"a5",w:8,r:"DUD",p:"Naevis says: nothing",d:"Empty pull. Pity counter still ticks up.",v:0,e:"none"},
+ {id:"a6",w:6,r:"COMMON",p:"Song Request",d:"I have to listen to an aespa track of your choice and write a real review.",v:0,e:"none"},
+ {id:"a7",w:15,r:"COMMON",p:"$0.25 sticker pick",d:"One sticker from the stash, your pick.",v:.25,e:"none"},
+ {id:"a8",w:11,r:"COMMON",p:"$0.50 candy",d:"Corner-store candy of choice.",v:.5,e:"none"},
+ {id:"a9",w:5,r:"COMMON",p:"$1 coffee credit",d:"A dollar off your next coffee.",v:1,e:"none"},
+ {id:"a10",w:2,r:"RARE",p:"$2 snack run",d:"Two dollars of snack, no questions.",v:2,e:"none"},
+ {id:"a11",w:1,r:"SECRET",p:"SECRET: $5 bonus drop",d:"Five dollars, no strings. Rare little jackpot.",v:5,e:"none",s:1}]},
+3:{name:"SYNK DIVE",tag:"3 TOKENS",cardChance:.32,pity:8,
+   blurb:"$1-8 range. Food credit and small aespa goods.",items:[
+ {id:"b1",w:12,r:"BUFF",p:"x2 Token Day",d:"24 hours of double tokens. Stack it with a big work day.",v:0,e:"m2_24"},
+ {id:"b2",w:6,r:"BUFF",p:"Free 5-Token Spin",d:"Upgrade. 5 tokens credited so you can roll KWANGYA free.",v:0,e:"spin5"},
+ {id:"b3",w:15,r:"RARE",p:"Guaranteed Photocard",d:"A photocard drops for sure on this pull.",v:0,e:"card1"},
+ {id:"b4",w:12,r:"COMMON",p:"$1 vending machine run",d:"Drink or snack on me.",v:1,e:"none"},
+ {id:"b5",w:20,r:"COMMON",p:"$2 delivery credit",d:"Two dollars toward a craving.",v:2,e:"none"},
+ {id:"b6",w:15,r:"COMMON",p:"$3 boba",d:"Standard drink, any shop.",v:3,e:"none"},
+ {id:"b7",w:10,r:"COMMON",p:"$4 snack haul",d:"H-Mart / 99 Ranch snack budget.",v:4,e:"none"},
+ {id:"b8",w:6,r:"RARE",p:"Physical aespa photocard",d:"A real card, random member, sleeved.",v:5,e:"none"},
+ {id:"b9",w:3,r:"EPIC",p:"$8 lunch",d:"An actual meal, delivered or picked up.",v:8,e:"none"},
+ {id:"b10",w:1,r:"SECRET",p:"SECRET: $15 mystery box",d:"Curated bundle. Contents unknown until you open it.",v:15,e:"none",s:1}]},
+5:{name:"KWANGYA",tag:"5 TOKENS",cardChance:.55,pity:6,
+   blurb:"$3-30 range. Real meals, real merch.",items:[
+ {id:"c1",w:12,r:"BUFF",p:"x2 Weekend",d:"Double tokens for the next 72 hours.",v:0,e:"m2_72"},
+ {id:"c2",w:6,r:"BUFF",p:"Free 10-Token Spin",d:"10 tokens credited. Straight to ARMAGEDDON.",v:0,e:"spin10"},
+ {id:"c3",w:8,r:"EPIC",p:"Double Photocard Pull",d:"Two photocards from this single spin.",v:0,e:"card2"},
+ {id:"c4",w:5,r:"BUFF",p:"+5 Shards",d:"Five shards straight into your pouch.",v:0,e:"shards5"},
+ {id:"c5",w:12,r:"COMMON",p:"$3 dessert",d:"Something sweet after work.",v:3,e:"none"},
+ {id:"c6",w:22,r:"RARE",p:"$5 anything",d:"Five dollars, spend it however.",v:5,e:"none"},
+ {id:"c7",w:14,r:"RARE",p:"$8 dinner delivery",d:"Solid meal, delivered, zero guilt.",v:8,e:"none"},
+ {id:"c8",w:12,r:"RARE",p:"$10 aespa goods",d:"Keyring, postcard set, small official merch.",v:10,e:"none"},
+ {id:"c9",w:5,r:"EPIC",p:"$12 dessert cafe outing",d:"Sit-down dessert trip, company optional.",v:12,e:"none"},
+ {id:"c10",w:2,r:"EPIC",p:"$15 aespa album (random ver.)",d:"Sealed album, includes its own real photocard.",v:15,e:"none"},
+ {id:"c11",w:1,r:"LEGEND",p:"$20 choose-your-own",d:"Name it. Within reason.",v:20,e:"none"},
+ {id:"c12",w:1,r:"SECRET",p:"SECRET: $30 haul",d:"Skincare run, merch drop, or a real dinner out.",v:30,e:"none",s:1}]},
+10:{name:"ARMAGEDDON",tag:"10 TOKENS",cardChance:1,pity:4,
+   blurb:"$5-75 range. Guaranteed photocard on every spin.",items:[
+ {id:"d1",w:10,r:"BUFF",p:"x3 Token Day",d:"Triple tokens for 24 hours. The best buff in the game.",v:0,e:"m3_24"},
+ {id:"d2",w:5,r:"LEGEND",p:"Set Skip Token",d:"Instantly completes your current photocard set.",v:0,e:"setskip"},
+ {id:"d3",w:6,r:"EPIC",p:"Double Photocard Pull",d:"Two photocards from this spin.",v:0,e:"card2"},
+ {id:"d4",w:4,r:"BUFF",p:"Free Respin",d:"10 tokens refunded. Roll ARMAGEDDON again.",v:0,e:"spin10"},
+ {id:"d5",w:8,r:"COMMON",p:"$5 consolation",d:"Small, but never nothing.",v:5,e:"none"},
+ {id:"d6",w:14,r:"RARE",p:"$8 comfort meal",d:"Order the thing you actually want.",v:8,e:"none"},
+ {id:"d7",w:24,r:"EPIC",p:"$10 feast delivery",d:"Main plus a side. No budgeting.",v:10,e:"none"},
+ {id:"d8",w:10,r:"EPIC",p:"$12 aespa goods",d:"Album, photobook, or merch of that size.",v:12,e:"none"},
+ {id:"d9",w:8,r:"EPIC",p:"$15 beauty pick",d:"Olive Young or Sephora single item.",v:15,e:"none"},
+ {id:"d10",w:5,r:"LEGEND",p:"$20 restaurant night",d:"Actual sit-down dinner. We drive.",v:20,e:"none"},
+ {id:"d11",w:3,r:"LEGEND",p:"$25 experience day",d:"Movie plus food plus boba, whole afternoon planned for you.",v:25,e:"none"},
+ {id:"d12",w:1,r:"LEGEND",p:"$30 official merch drop",d:"SM Store order, tee, or tote.",v:30,e:"none"},
+ {id:"d13",w:1,r:"SECRET",p:"SECRET: $50 concert fund",d:"Fifty dollars straight into the tour savings jar.",v:50,e:"none",s:1},
+ {id:"d14",w:1,r:"MYTHIC",p:"SECRET: $75 GRAND PRIZE",d:"Lightstick, tickets, dinner, whatever you want. The big one.",v:75,e:"none",s:1}]}
+};}
+function defTasks(){return[
+ {id:"t1",label:"Pomodoro completed",tok:1,note:"photo of the finished timer",until:null},
+ {id:"t2",label:"4-pomodoro day bonus",tok:2,note:"claim once after your 4th pomo",until:null},
+ {id:"t3",label:"Went into lab / work",tok:3,note:"badge-in or desk photo",until:null},
+ {id:"t4",label:"Woke up on target time",tok:2,note:"clock photo within 10 min of alarm",until:null},
+ {id:"t5",label:"Sent the scary email",tok:1,note:"screenshot of sent folder",until:null},
+ {id:"t6",label:"90-min phone-free block",tok:2,note:"screen-time screenshot",until:null},
+ {id:"t7",label:"Movement (20 min+)",tok:1,note:"gym, walk, anything",until:null},
+ {id:"t8",label:"In bed by target",tok:1,note:"one photo, no doomscroll",until:null},
+ {id:"t9",label:"Weekly: 5 days of work",tok:5,note:"claim Sunday night",until:null},
+ {id:"e1",label:"EVENT: hang your posters",tok:2,note:"unpacking special, photo of the wall",until:Date.now()+5*864e5}
+];}
+function defSet(n){return{id:"s"+n,name:"ARMAGEDDON SET "+n,completed:false,cards:[
+ {id:"karina",nm:"KARINA",ln:"Blade",cls:"k",img:null,n:0},
+ {id:"giselle",nm:"GISELLE",ln:"Sound",cls:"g",img:null,n:0},
+ {id:"winter",nm:"WINTER",ln:"Frost",cls:"w",img:null,n:0},
+ {id:"ningning",nm:"NINGNING",ln:"Voice",cls:"n",img:null,n:0}]};}
+function defState(){return{v:VER,tokens:0,streak:0,pomosToday:0,shards:0,setsDone:0,
+ pity:{1:0,3:0,5:0,10:0},buffs:[],revealed:[],pools:defPools(),tasks:defTasks(),
+ sets:[defSet(1)],active:0,pending:[],log:[],seq:100};}
 
-  function initFirebase(){
-    if(!firebaseConfig.apiKey || firebaseConfig.apiKey === 'YOUR_API_KEY'){
-      document.getElementById('gacha-root').innerHTML =
-        '<div style="max-width:480px;margin:60px auto;padding:24px;background:#20202f;border:1px solid #33334a;border-radius:16px;color:#f1f0f6;font-family:sans-serif;line-height:1.6;">' +
-        '<h2 style="margin-top:0;">Almost there</h2>' +
-        '<p>This copy still has placeholder Firebase config. Paste your project\'s config into the <code>firebaseConfig</code> block near the top of this file, then reload the page.</p>' +
-        '</div>';
-      return false;
-    }
-    try{
-      firebase.initializeApp(firebaseConfig);
-      dbRef = firebase.database().ref('gacha-state');
-      firebaseReady = true;
-      return true;
-    }catch(e){
-      showToast('Firebase failed to initialize — check your config');
-      return false;
-    }
-  }
+/* ---------- storage ---------- */
+var DB={key:"aequest_v3",
+ load:function(){try{return JSON.parse(localStorage.getItem(this.key))}catch(e){return null}},
+ save:function(s){try{localStorage.setItem(this.key,JSON.stringify(s));return true}
+   catch(e){toast("Storage full. Clear old photos in Admin > Tools.");return false}}};
+var S=DB.load();
+if(!S||S.v!==VER){S=defState();}
+function save(){DB.save(S);}
 
-  // ---- home screen / PWA setup (iOS Safari "Add to Home Screen") ----
-  function setupHomeScreen(){
-    const head = document.head;
+/* ---------- effects ---------- */
+var EFFECTS={none:"- none -",m15_24:"x1.5 tokens / 24h",m2_24:"x2 tokens / 24h",m2_72:"x2 tokens / 72h",
+ m3_24:"x3 tokens / 24h",bounty3:"+1 per pomo, 3 uses",spin1:"refund 1 token",spin3:"refund 3 tokens",
+ spin5:"grant 5 tokens",spin10:"grant 10 tokens",card1:"guaranteed photocard",card2:"two photocards",
+ shards5:"+5 shards",setskip:"complete current set"};
+var RCOLOR={DUD:"#7a7a8c",COMMON:"#9ad7ff",BUFF:"#7bffcf",RARE:"#ff9ad7",EPIC:"#c9a3ff",
+ LEGEND:"#ffd76e",MYTHIC:"#ff5f6d",SECRET:"#ffd76e"};
+var RARITIES=["DUD","COMMON","BUFF","RARE","EPIC","LEGEND","MYTHIC","SECRET"];
+var GOOD=["RARE","EPIC","LEGEND","MYTHIC","SECRET"];
 
-    function ensureMeta(name, content){
-      let el = head.querySelector(`meta[name="${name}"]`);
-      if(!el){ el = document.createElement('meta'); el.setAttribute('name', name); head.appendChild(el); }
-      el.setAttribute('content', content);
-    }
+/* ---------- helpers ---------- */
+function $(s){return document.querySelector(s)}
+function esc(t){return String(t==null?"":t).replace(/[<>&"]/g,function(c){
+ return{"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]})}
+function toast(m){var t=$("#toast");t.textContent=m;t.classList.add("show");
+ clearTimeout(t._x);t._x=setTimeout(function(){t.classList.remove("show")},2800)}
+function ago(ts){var d=(Date.now()-ts)/1000;if(d<60)return"just now";if(d<3600)return Math.floor(d/60)+"m ago";
+ if(d<86400)return Math.floor(d/3600)+"h ago";return Math.floor(d/86400)+"d ago"}
+function inDays(ts){var d=(ts-Date.now())/864e5;if(d<=0)return"expired";if(d<1)return Math.ceil(d*24)+"h left";return Math.ceil(d)+"d left"}
+function uid(){S.seq++;return"x"+S.seq+Math.floor(Math.random()*900+100)}
+function activeSet(){return S.sets[S.active]||S.sets[0]}
+function owned(){var st=activeSet();return st.cards.filter(function(c){return c.n>0}).length}
+function pushLog(o){o.ts=Date.now();o.id=uid();S.log.unshift(o);if(S.log.length>400)S.log.length=400;save()}
+function pruneBuffs(){S.buffs=S.buffs.filter(function(b){
+ if(b.until&&Date.now()>b.until)return false;if(b.uses!=null&&b.uses<=0)return false;return true})}
+function multNow(){pruneBuffs();var m=1;S.buffs.forEach(function(b){if(b.kind==="mult"&&b.value>m)m=b.value});return m}
+function poolTotal(p){var t=0;S.pools[p].items.forEach(function(i){t+=Number(i.w)||0});return t}
+function poolEV(p){var t=poolTotal(p),s=0;if(!t)return 0;
+ S.pools[p].items.forEach(function(i){s+=(Number(i.w)||0)*(Number(i.v)||0)});return s/t}
+function rollItem(items){var t=0,i;for(i=0;i<items.length;i++)t+=Number(items[i].w)||0;
+ var r=Math.random()*t;for(i=0;i<items.length;i++){r-=Number(items[i].w)||0;if(r<=0)return items[i]}
+ return items[items.length-1]}
+function shrink(file,cb){var r=new FileReader();r.onload=function(){var im=new Image();
+ im.onload=function(){var mx=680,sc=Math.min(1,mx/Math.max(im.width,im.height));
+  var c=document.createElement("canvas");c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);
+  c.getContext("2d").drawImage(im,0,0,c.width,c.height);cb(c.toDataURL("image/jpeg",.62))};
+ im.onerror=function(){toast("Could not read that image")};im.src=r.result};r.readAsDataURL(file)}
 
-    // required for env(safe-area-inset-*) to actually report non-zero values
-    let viewport = head.querySelector('meta[name="viewport"]');
-    if(!viewport){ viewport = document.createElement('meta'); viewport.setAttribute('name','viewport'); head.appendChild(viewport); }
-    viewport.setAttribute('content', 'width=device-width, initial-scale=1, viewport-fit=cover');
+/* ---------- view state ---------- */
+var tab="spin",unlocked=false,openOdds={},draft={task:null,photo:null,note:""},adminSub="queue";
 
-    ensureMeta('apple-mobile-web-app-capable', 'yes');
-    ensureMeta('apple-mobile-web-app-status-bar-style', 'black-translucent');
-    ensureMeta('apple-mobile-web-app-title', 'Token Gacha');
-    ensureMeta('theme-color', '#14141f');
-    ensureMeta('mobile-web-app-capable', 'yes');
+/* ================== RENDER ================== */
+function head(){
+ pruneBuffs();
+ $("#bal").textContent=S.tokens;
+ $("#chStreak").textContent="streak "+S.streak+"d";
+ $("#chPomo").textContent=S.pomosToday+" pomos today";
+ var m=multNow(),c=$("#chMult");c.textContent="x"+m.toFixed(1)+" tokens";c.className="chip"+(m>1?" hot":"");
+ $("#chCards").textContent="cards "+owned()+"/"+activeSet().cards.length;
+ $("#chShard").textContent=S.shards+" shards";
+ var n=S.pending.length,b=document.querySelector('nav button[data-tab="admin"]');
+ var old=b.querySelector(".badge");if(old)old.remove();
+ if(n){var e=document.createElement("span");e.className="badge";e.textContent=n;b.appendChild(e)}
+}
+function buffHTML(){
+ pruneBuffs();if(!S.buffs.length)return"";
+ var h='<div class="sec-t">ACTIVE BUFFS</div><div class="buffbar">';
+ S.buffs.forEach(function(b){h+='<div class="buff"><b>'+esc(b.label)+'</b><span>'+
+  (b.until?inDays(b.until):(b.uses+" uses left"))+'</span></div>'});
+ return h+"</div>";
+}
+function oddsHTML(p){
+ var P=S.pools[p],t=poolTotal(p),h='<div class="odds">';
+ var sorted=P.items.slice().sort(function(a,b){return (b.w||0)-(a.w||0)});
+ sorted.forEach(function(i){
+  var hide=i.s&&S.revealed.indexOf(i.id)<0;
+  var nm=hide?"??? SECRET PRIZE":i.p;
+  var ds=hide?"Hidden until someone pulls it.":i.d;
+  h+='<div class="orow"><div class="n"><span class="tag" style="color:'+(RCOLOR[i.r]||"#fff")+
+    ';border-color:'+(RCOLOR[i.r]||"#fff")+'">'+esc(i.r)+'</span>'+esc(nm)+
+    '<small>'+esc(ds)+(i.e&&i.e!=="none"?" ["+EFFECTS[i.e]+"]":"")+'</small></div>'+
+    '<div class="pct" style="color:'+(RCOLOR[i.r]||"#fff")+'">'+(t?((i.w/t)*100).toFixed(1):"0")+'%</div></div>';
+ });
+ h+='<div class="hint" style="margin-top:8px">Photocard chance this pool: '+Math.round(P.cardChance*100)+
+  '%. Pity: a guaranteed RARE-or-better every '+P.pity+' pulls without one.</div></div>';
+ return h;
+}
+function viewSpin(){
+ var h=buffHTML()+'<div class="sec-t">CHOOSE YOUR PULL</div>';
+ [1,3,5,10].forEach(function(c){
+  var P=S.pools[c],can=S.tokens>=c,pc=S.pity[c]||0,pct=Math.min(100,pc/P.pity*100);
+  h+='<div class="pool p'+c+'"><h3>'+esc(P.name)+'</h3><div class="sub">'+esc(P.blurb)+'</div>'+
+   '<div class="rowb"><div><div class="pity">PITY '+pc+'/'+P.pity+' to guaranteed rare+</div>'+
+   '<div class="bar"><i style="width:'+pct+'%"></i></div></div>'+
+   '<button class="spin'+(c===10?" g":"")+'" data-act="spin" data-pool="'+c+'"'+(can?"":" disabled")+'>'+
+   (can?esc(P.tag):"NEED "+c)+'</button></div>'+
+   '<button class="oddsbtn" data-act="odds" data-pool="'+c+'">'+(openOdds[c]?"HIDE ODDS":"SEE ALL ODDS")+'</button>'+
+   (openOdds[c]?oddsHTML(c):"")+'</div>';
+ });
+ h+='<div class="box dash"><b style="font-size:12.5px">SET BONUS</b><div class="hint">'+
+  'Every spin can drop a photocard from '+esc(activeSet().name)+'. Complete the set for <b>+5 tokens, a free 5-token spin, and one KWANGYA-tier prize</b>, then a new set opens. Duplicates become shards (10 shards = free 3-token spin).<br>Shards: <b>'+
+  S.shards+'</b> &nbsp; Sets completed: <b>'+S.setsDone+'</b></div>'+
+  (S.shards>=10?'<button class="btn sm" data-act="shards">REDEEM 10 SHARDS -> FREE 3-TOKEN SPIN</button>':"")+'</div>';
+ return h;
+}
+function viewCards(){
+ var st=activeSet(),h='<div class="sec-t">'+esc(st.name)+'</div><div class="cards">';
+ st.cards.forEach(function(c){
+  h+='<div class="pc '+c.cls+(c.n?"":" locked")+'"'+(c.img&&c.n?' style="background-image:url('+c.img+')"':"")+'>'+
+   (c.n>1?'<div class="ct">x'+c.n+'</div>':"")+'<div class="face"><div class="nm">'+esc(c.nm)+
+   '</div><div class="rl">'+esc(c.ln)+'</div></div></div>';
+ });
+ h+='</div><div class="box"><b style="font-size:12.5px">'+owned()+"/"+st.cards.length+' collected</b>'+
+  '<div class="hint">Shards: <b>'+S.shards+'</b>'+(S.shards>=10?" (redeemable)":"")+
+  '<br>Set completion pays +5 tokens, a free 5-token spin, and a KWANGYA-tier physical prize of your choosing.</div>'+
+  (S.shards>=10?'<button class="btn sm" data-act="shards">REDEEM 10 SHARDS</button>':"")+'</div>';
+ if(S.setsDone){
+  h+='<div class="sec-t">COMPLETED SETS</div>';
+  S.sets.forEach(function(s){if(s.completed)h+='<div class="li card"><div class="t">'+esc(s.name)+
+   '</div><div class="m">complete</div></div>'});
+ }
+ return h;
+}
+function viewSubmit(){
+ var h='<div class="sec-t">SUBMIT PROOF</div><div class="box"><div class="hint">'+
+  'Pick what you did, attach the photo, send it. It lands in the approval queue and tokens appear once approved.</div></div>'+
+  '<div class="sec-t">WHAT DID YOU DO</div><div class="grid2">';
+ S.tasks.forEach(function(t){
+  if(t.until&&t.until<Date.now())return;
+  var ev=t.until?" &middot; "+inDays(t.until):"";
+  h+='<button class="q'+(draft.task===t.id?" on":"")+'" data-act="pick" data-id="'+t.id+'"><b>'+esc(t.label)+
+   '</b><span>+'+t.tok+" token"+(t.tok>1?"s":"")+ev+'</span></button>';
+ });
+ h+='</div>';
+ var T=null;S.tasks.forEach(function(t){if(t.id===draft.task)T=t});
+ if(T){
+  h+='<div class="box"><b style="font-size:12.5px">'+esc(T.label)+' (+'+T.tok+')</b>'+
+   '<div class="hint">'+esc(T.note||"")+'</div>'+
+   '<label class="f">PHOTO PROOF</label>'+
+   '<div class="filerow"><button class="btn ghost sm">'+(draft.photo?"REPLACE PHOTO":"ADD PHOTO")+
+   '</button><input type="file" accept="image/*" data-up="proof"></div>'+
+   (draft.photo?'<img class="thumb" src="'+draft.photo+'">':"")+
+   '<label class="f">NOTE (optional)</label><input data-d="note" value="'+esc(draft.note)+'" placeholder="anything I should know">'+
+   '<button class="btn" data-act="send">SEND FOR APPROVAL</button>'+
+   '<button class="btn ghost sm" data-act="cancel">CANCEL</button></div>';
+ }
+ var mine=S.pending.slice();
+ if(mine.length){
+  h+='<div class="sec-t">WAITING ON APPROVAL</div>';
+  mine.forEach(function(p){h+='<div class="li"><div class="t">'+esc(p.label)+'</div><div class="m">sent '+
+   ago(p.ts)+(p.note?" &middot; "+esc(p.note):"")+'</div><div class="v" style="color:#a099c4">+'+p.tok+'</div></div>'});
+ }
+ h+='<div class="sec-t">EARN TABLE</div>';
+ S.tasks.forEach(function(t){
+  var exp=t.until?(t.until<Date.now()?"EXPIRED":"EVENT &middot; "+inDays(t.until)):"";
+  h+='<div class="li earn"><div class="t">'+esc(t.label)+'</div><div class="m">'+esc(t.note||"")+
+   (exp?" &middot; "+exp:"")+'</div><div class="v" style="color:#00e5ff">+'+t.tok+'</div></div>';
+ });
+ h+='<div class="box dash"><div class="hint">No daily cap right now. Tokens never expire, buffs do. '+
+  'Photos should be live or timestamped where you can.</div></div>';
+ return h;
+}
+function viewLog(){
+ var h='<div class="sec-t">ACTIVITY AND REWARD LOG</div>';
+ if(!S.log.length)h+='<div class="hint">Nothing yet.</div>';
+ S.log.forEach(function(l){
+  var col=String(l.value||"")[0]==="-"?"#ff8fb8":"#00e5ff";
+  h+='<div class="li '+esc(l.type)+'"><div class="t">'+esc(l.title)+'</div><div class="m">'+
+   esc(l.meta||"")+" &middot; "+ago(l.ts)+'</div>'+
+   (l.value?'<div class="v" style="color:'+col+'">'+esc(l.value)+'</div>':"")+
+   (l.photo?'<img class="thumb" src="'+l.photo+'">':"")+'</div>';
+ });
+ return h;
+}
+/* ---------- admin ---------- */
+function viewAdmin(){
+ if(!unlocked){
+  return '<div class="sec-t">ADMIN CONSOLE</div><div class="box"><div class="hint">'+
+   'Enter the PIN. In production this screen is also gated by Firebase Auth plus an /admins/{uid} allow-list rule, '+
+   'so the PIN is convenience and the rules are the real lock.</div>'+
+   '<input id="pin" type="password" inputmode="numeric" placeholder="PIN" autocomplete="off">'+
+   '<button class="btn" data-act="unlock">UNLOCK</button></div>';
+ }
+ var h='<div class="sec-t">ADMIN &middot; UNLOCKED</div><div class="grid3">'+
+  ['queue','grant','prizes','cards','tasks','tools'].map(function(k){
+   return '<button class="q'+(adminSub===k?" on":"")+'" data-act="sub" data-k="'+k+'"><b>'+
+    k.toUpperCase()+'</b></button>'}).join("")+'</div>';
 
-    document.title = 'Token Gacha';
-
-    // generate a simple app icon (dark tile, gradient orb, gold star) for the home screen
-    try{
-      const size = 180;
-      const canvas = document.createElement('canvas');
-      canvas.width = size; canvas.height = size;
-      const ctx = canvas.getContext('2d');
-
-      ctx.fillStyle = '#14141f';
-      ctx.fillRect(0,0,size,size);
-
-      const grad = ctx.createRadialGradient(size*0.35,size*0.32,size*0.05, size*0.5,size*0.5,size*0.6);
-      grad.addColorStop(0, 'rgba(255,79,163,0.9)');
-      grad.addColorStop(0.55, 'rgba(139,124,246,0.55)');
-      grad.addColorStop(1, 'rgba(79,216,255,0.0)');
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(size/2, size/2, size*0.46, 0, Math.PI*2);
-      ctx.fill();
-
-      // 4-point sparkle/star
-      ctx.fillStyle = '#ffc857';
-      ctx.beginPath();
-      const cx = size/2, cy = size/2, r1 = size*0.16, r2 = size*0.045;
-      for(let i=0;i<4;i++){
-        const a0 = (Math.PI/2)*i;
-        const aMid = a0 + Math.PI/4;
-        ctx.lineTo(cx + Math.cos(a0)*r1, cy + Math.sin(a0)*r1);
-        ctx.lineTo(cx + Math.cos(aMid)*r2, cy + Math.sin(aMid)*r2);
-      }
-      ctx.closePath();
-      ctx.fill();
-
-      const iconUrl = canvas.toDataURL('image/png');
-      ['apple-touch-icon','icon','shortcut icon'].forEach(rel=>{
-        let link = head.querySelector(`link[rel="${rel}"]`);
-        if(!link){ link = document.createElement('link'); link.setAttribute('rel', rel); head.appendChild(link); }
-        link.setAttribute('href', iconUrl);
-      });
-
-      // lightweight manifest for Android/Chrome parity (harmless on iOS)
-      const manifest = {
-        name: 'Token Gacha', short_name: 'Gacha', display: 'standalone',
-        background_color: '#14141f', theme_color: '#14141f',
-        icons: [{ src: iconUrl, sizes: '180x180', type: 'image/png' }]
-      };
-      const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-      const manifestUrl = URL.createObjectURL(blob);
-      let manifestLink = head.querySelector('link[rel="manifest"]');
-      if(!manifestLink){ manifestLink = document.createElement('link'); manifestLink.setAttribute('rel','manifest'); head.appendChild(manifestLink); }
-      manifestLink.setAttribute('href', manifestUrl);
-    }catch(e){ /* icon generation is best-effort; app still works without it */ }
-  }
-  setupHomeScreen();
-
-  const defaultState = {
-    pointValues: { pomodoro:1, lab:2, email:2, wakeup:1, streakEvery:4, streakBonus:1 },
-    tiers: [
-      { id:'common', name:'Next Level', cost:2, items:['Pick a snack', '5 extra min of break', 'Choose the next work playlist'] },
-      { id:'rare', name:'Savage', cost:5, items:['Boba or coffee run', 'A cheap trinket / sticker haul', 'Skip one dreaded task, guilt-free'] },
-      { id:'epic', name:'Armageddon', cost:10, items:['Photocard or small merch item', 'A proper meal out', 'A lazy morning, no alarm'] },
-      { id:'legendary', name:'Supernova', cost:20, items:['Bigger aespa merch piece', 'Concert-adjacent purchase', 'A real splurge dinner'] }
-    ],
-    log: [],
-    pulls: [],
-    totalPoints: 0
-  };
-
-  function loadState(){
-    // one-time initial read, so the UI has something to show immediately
-    dbRef.once('value')
-      .then(snap=>{
-        state = snap.val() || structuredClone(defaultState);
-        render();
-      })
-      .catch(()=>{
-        state = structuredClone(defaultState);
-        render();
-      });
-
-    // live listener: picks up changes made from the other person's device automatically
-    dbRef.on('value', snap=>{
-      const incoming = snap.val();
-      if(incoming){
-        state = incoming;
-        render();
-      }
-    });
-  }
-
-  async function saveState(){
-    if(saving || !firebaseReady) return;
-    saving = true;
-    try{
-      await dbRef.set(state);
-    }catch(e){
-      showToast('Could not save — check connection');
-    }
-    saving = false;
-  }
-
-  function showToast(msg){
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    setTimeout(()=> t.classList.remove('show'), 1800);
-  }
-
-  function timeAgo(ts){
-    const s = Math.floor((Date.now()-ts)/1000);
-    if(s<60) return 'just now';
-    const m = Math.floor(s/60);
-    if(m<60) return m+'m ago';
-    const h = Math.floor(m/60);
-    if(h<24) return h+'h ago';
-    const d = Math.floor(h/24);
-    return d+'d ago';
-  }
-
-  function isSameDay(a,b){
-    const da = new Date(a), db = new Date(b);
-    return da.getFullYear()===db.getFullYear() && da.getMonth()===db.getMonth() && da.getDate()===db.getDate();
-  }
-
-  // ---- photo compression ----
-  function compressImage(file){
-    return new Promise((resolve, reject)=>{
-      const reader = new FileReader();
-      reader.onload = (e)=>{
-        const img = new Image();
-        img.onload = ()=>{
-          const maxDim = 640;
-          let w = img.width, h = img.height;
-          if(w > h && w > maxDim){ h = Math.round(h * (maxDim/w)); w = maxDim; }
-          else if(h > maxDim){ w = Math.round(w * (maxDim/h)); h = maxDim; }
-          const canvas = document.createElement('canvas');
-          canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', 0.6));
-        };
-        img.onerror = reject;
-        img.src = e.target.result;
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  }
-
-  const ACTIONS = [
-    { type:'pomodoro', label:'Pomodoro done', key:'pomodoro' },
-    { type:'lab', label:'Went to lab', key:'lab' },
-    { type:'email', label:'Sent the email', key:'email' },
-    { type:'wakeup', label:'Woke up on time', key:'wakeup' }
-  ];
-
-  function startLog(actionType){
-    pendingActionType = actionType;
-    document.getElementById('photoInput').click();
-  }
-
-  async function handlePhotoSelected(file){
-    if(!file || !pendingActionType) return;
-    const action = ACTIONS.find(a=>a.type===pendingActionType);
-    let photo;
-    try{
-      photo = await compressImage(file);
-    }catch(e){
-      showToast('Could not read that photo — try again');
-      pendingActionType = null;
-      return;
-    }
-    const entry = {
-      id: Date.now()+'-'+Math.random().toString(36).slice(2,7),
-      type: action.type,
-      label: action.label,
-      points: state.pointValues[action.key],
-      photo,
-      status: 'pending',
-      ts: Date.now()
-    };
-    state.log.unshift(entry);
-    pendingActionType = null;
-    saveState();
-    render();
-    showToast('Queued for review');
-  }
-
-  function todayApprovedPomodoroCount(){
-    return state.log.filter(l => l.type==='pomodoro' && l.status==='approved' && isSameDay(l.ts, Date.now())).length;
-  }
-
-  function approveEntry(id){
-    const entry = state.log.find(l=>l.id===id);
-    if(!entry || entry.status!=='pending') return;
-    entry.status = 'approved';
-    entry.reviewedTs = Date.now();
-    state.totalPoints += entry.points;
-
-    if(entry.type === 'pomodoro'){
-      const count = todayApprovedPomodoroCount();
-      if(count>0 && count % state.pointValues.streakEvery === 0){
-        const bonus = state.pointValues.streakBonus;
-        state.totalPoints += bonus;
-        state.log.unshift({
-          id: Date.now()+'-bonus', type:'streak', label:`Streak bonus (${count} pomodoros today)`,
-          points: bonus, status:'approved', ts: Date.now()+1, reviewedTs: Date.now()+1
-        });
-        showToast(`Approved — +${bonus} streak bonus too!`);
-      } else {
-        showToast('Approved');
-      }
-    } else {
-      showToast('Approved');
-    }
-    saveState();
-    render();
-  }
-
-  function rejectEntry(id){
-    const entry = state.log.find(l=>l.id===id);
-    if(!entry || entry.status!=='pending') return;
-    entry.status = 'rejected';
-    entry.reviewedTs = Date.now();
-    saveState();
-    render();
-  }
-
-  function attemptPull(tier){
-    if(state.totalPoints < tier.cost){
-      showToast(`Need ${tier.cost - state.totalPoints} more token(s)`);
-      return;
-    }
-    state.totalPoints -= tier.cost;
-    const item = tier.items[Math.floor(Math.random()*tier.items.length)];
-    const pull = { id: Date.now()+'-pull', tier: tier.name, item, ts: Date.now() };
-    state.pulls.unshift(pull);
-    state.log.unshift({ id: pull.id+'-log', type:'pull', label:`Pulled ${tier.name}: ${item}`, points: -tier.cost, status:'approved', ts: pull.ts });
-    saveState();
-    render();
-    playReveal(tier.name, item);
-  }
-
-  function playReveal(tierName, item){
-    const stage = document.getElementById('revealStage');
-    const inner = document.getElementById('revealInner');
-    document.getElementById('revealTierTag').textContent = tierName;
-    document.getElementById('revealItemName').textContent = item;
-    stage.style.display = 'flex';
-    inner.classList.remove('flipped');
-    void inner.offsetWidth; // reflow to restart animation
-    setTimeout(()=> inner.classList.add('flipped'), 120);
-  }
-
-  function render(){
-    document.getElementById('pointsDisplay').textContent = state.totalPoints;
-
-    const streakBadge = document.getElementById('streakBadge');
-    const todayCount = todayApprovedPomodoroCount();
-    if(todayCount > 0){
-      streakBadge.style.display = 'inline-flex';
-      streakBadge.textContent = `${todayCount} approved pomodoro${todayCount===1?'':'s'} today`;
-    } else {
-      streakBadge.style.display = 'none';
-    }
-
-    // log grid
-    const logGrid = document.getElementById('logGrid');
-    logGrid.innerHTML = '';
-    ACTIONS.forEach(a=>{
-      const btn = document.createElement('button');
-      btn.className = 'log-btn';
-      btn.innerHTML = `<span>${a.label}</span><span class="pts">+${state.pointValues[a.key]} (pending review)</span>`;
-      btn.onclick = ()=> startLog(a.type);
-      logGrid.appendChild(btn);
-    });
-
-    // pending queue
-    const pending = state.log.filter(l=>l.status==='pending');
-    const pendingCountEl = document.getElementById('pendingCount');
-    if(pending.length>0){
-      pendingCountEl.style.display = 'inline-block';
-      pendingCountEl.textContent = pending.length;
-    } else {
-      pendingCountEl.style.display = 'none';
-    }
-    const pendingList = document.getElementById('pendingList');
-    pendingList.innerHTML = '';
-    if(pending.length===0){
-      pendingList.innerHTML = '<div class="pending-empty">Nothing waiting on you right now.</div>';
-    } else {
-      pending.forEach(entry=>{
-        const row = document.createElement('div');
-        row.className = 'pending-row';
-        row.innerHTML = `
-          <img class="pending-thumb" src="${entry.photo}" alt="">
-          <div class="pending-info">
-            <div class="label">${entry.label}</div>
-            <div class="meta">+${entry.points} · ${timeAgo(entry.ts)}</div>
-          </div>
-          <div class="pending-actions">
-            <button class="approve-btn">Approve</button>
-            <button class="reject-btn">Reject</button>
-          </div>
-        `;
-        row.querySelector('.approve-btn').onclick = ()=> approveEntry(entry.id);
-        row.querySelector('.reject-btn').onclick = ()=> rejectEntry(entry.id);
-        pendingList.appendChild(row);
-      });
-    }
-
-    // tiers
-    const tierGrid = document.getElementById('tierGrid');
-    tierGrid.innerHTML = '';
-    state.tiers.forEach(tier=>{
-      const card = document.createElement('button');
-      const affordable = state.totalPoints >= tier.cost;
-      card.className = `tier-card tier-${tier.id}` + (affordable ? '' : ' disabled');
-      card.innerHTML = `<div class="glow"></div><div class="name">${tier.name}</div><div class="cost">${tier.cost} tokens</div>`;
-      card.onclick = ()=> attemptPull(tier);
-      tierGrid.appendChild(card);
-    });
-
-    // history (everything, most recent first, capped)
-    const historyList = document.getElementById('historyList');
-    historyList.innerHTML = '';
-    const recent = state.log.slice(0,12);
-    if(recent.length===0){
-      historyList.innerHTML = '<div class="history-empty">No activity yet — log your first pomodoro above.</div>';
-    } else {
-      recent.forEach(entry=>{
-        const row = document.createElement('div');
-        row.className = 'history-row';
-        const sign = entry.points >= 0 ? '+' : '';
-        const statusClass = 'status-'+(entry.status||'approved');
-        const thumb = entry.photo ? `<img class="history-thumb" src="${entry.photo}" alt="">` : '';
-        row.innerHTML = `${thumb}<div class="history-main">${entry.label}<br><span class="who">${timeAgo(entry.ts)}${entry.status && entry.status!=='approved' ? ' · '+entry.status : ''}</span></div><span class="history-amt ${statusClass}">${sign}${entry.points}</span>`;
-        historyList.appendChild(row);
-      });
-    }
-
-    renderSettings();
-  }
-
-  function renderSettings(){
-    const body = document.getElementById('settingsBody');
-    body.innerHTML = '';
-
-    const pvWrap = document.createElement('div');
-    const pvFields = [
-      ['pomodoro','Pomodoro'], ['lab','Lab visit'], ['email','Email/task'], ['wakeup','Wake-up'],
-      ['streakEvery','Pomodoros per bonus'], ['streakBonus','Streak bonus']
-    ];
-    pvFields.forEach(([key,label])=>{
-      const row = document.createElement('div');
-      row.className = 'field-row';
-      row.innerHTML = `<label>${label}</label>`;
-      const input = document.createElement('input');
-      input.type = 'number';
-      input.min = '0';
-      input.value = state.pointValues[key];
-      input.onchange = (e)=>{
-        const v = parseInt(e.target.value,10);
-        state.pointValues[key] = isNaN(v) ? state.pointValues[key] : v;
-        saveState(); render();
-      };
-      row.appendChild(input);
-      pvWrap.appendChild(row);
-    });
-    body.appendChild(pvWrap);
-
-    state.tiers.forEach((tier)=>{
-      const box = document.createElement('div');
-      box.className = 'tier-edit';
-      const title = document.createElement('div');
-      title.className = 'tier-edit-title';
-      title.textContent = tier.name;
-      box.appendChild(title);
-
-      const costRow = document.createElement('div');
-      costRow.className = 'field-row';
-      costRow.innerHTML = `<label>Cost (tokens)</label>`;
-      const costInput = document.createElement('input');
-      costInput.type = 'number';
-      costInput.min = '1';
-      costInput.value = tier.cost;
-      costInput.onchange = (e)=>{
-        const v = parseInt(e.target.value,10);
-        tier.cost = isNaN(v) ? tier.cost : v;
-        saveState(); render();
-      };
-      costRow.appendChild(costInput);
-      box.appendChild(costRow);
-
-      tier.items.forEach((item, idx)=>{
-        const row = document.createElement('div');
-        row.className = 'item-edit-row';
-        const input = document.createElement('input');
-        input.value = item;
-        input.onchange = (e)=>{
-          tier.items[idx] = e.target.value;
-          saveState();
-        };
-        const del = document.createElement('button');
-        del.className = 'small-btn';
-        del.textContent = 'remove';
-        del.onclick = ()=>{
-          if(tier.items.length<=1){ showToast('Keep at least one reward'); return; }
-          tier.items.splice(idx,1);
-          saveState(); render();
-        };
-        row.appendChild(input);
-        row.appendChild(del);
-        box.appendChild(row);
-      });
-
-      const addBtn = document.createElement('button');
-      addBtn.className = 'small-btn';
-      addBtn.textContent = '+ add reward';
-      addBtn.onclick = ()=>{
-        tier.items.push('New reward');
-        saveState(); render();
-      };
-      box.appendChild(addBtn);
-
-      body.appendChild(box);
-    });
-
-    const note = document.createElement('div');
-    note.className = 'save-note';
-    note.textContent = 'Changes save automatically and are shared between both of you.';
-    body.appendChild(note);
-  }
-
-  document.getElementById('settingsToggle').onclick = ()=>{
-    const body = document.getElementById('settingsBody');
-    body.style.display = body.style.display === 'none' ? 'flex' : 'none';
-  };
-
-  document.getElementById('photoInput').addEventListener('change', (e)=>{
-    const file = e.target.files[0];
-    handlePhotoSelected(file);
-    e.target.value = '';
+ if(adminSub==="queue"){
+  h+='<div class="sec-t">PENDING APPROVALS ('+S.pending.length+')</div>';
+  if(!S.pending.length)h+='<div class="hint">Queue is empty.</div>';
+  S.pending.forEach(function(p){
+   h+='<div class="pend">'+(p.photo?'<img class="pthumb" src="'+p.photo+'">':"")+
+    '<b style="font-size:13px">'+esc(p.label)+'</b><div class="hint">+'+p.tok+' tokens &middot; '+ago(p.ts)+
+    (p.note?'<br>"'+esc(p.note)+'"':"")+'</div><div style="clear:both"></div>'+
+    '<div class="grid2"><button class="btn ok sm" data-act="ok" data-id="'+p.id+'">APPROVE +'+p.tok+'</button>'+
+    '<button class="btn no sm" data-act="no" data-id="'+p.id+'">REJECT</button></div>'+
+    '<input data-adj="'+p.id+'" type="number" inputmode="numeric" placeholder="override token amount (optional)"></div>';
   });
+ }
+ if(adminSub==="grant"){
+  h+='<div class="sec-t">QUICK GRANT (from texts)</div><div class="grid2">';
+  S.tasks.forEach(function(t){if(t.until&&t.until<Date.now())return;
+   h+='<button class="q" data-act="quick" data-id="'+t.id+'"><b>'+esc(t.label)+'</b><span>+'+t.tok+'</span></button>'});
+  h+='</div><div class="sec-t">CUSTOM ENTRY</div><div class="box">'+
+   '<input id="cT" placeholder="What she did"><input id="cV" type="number" inputmode="numeric" placeholder="Tokens (negative deducts)">'+
+   '<input id="cM" placeholder="Note / timestamp"><button class="btn" data-act="custom">CREDIT AND LOG</button></div>'+
+   '<div class="sec-t">APPLY BUFF MANUALLY</div><div class="grid2">'+
+   '<button class="q" data-act="buff" data-e="m15_24"><b>x1.5 / 24h</b><span>apply</span></button>'+
+   '<button class="q" data-act="buff" data-e="m2_24"><b>x2 / 24h</b><span>apply</span></button>'+
+   '<button class="q" data-act="buff" data-e="m2_72"><b>x2 / 72h</b><span>apply</span></button>'+
+   '<button class="q" data-act="buff" data-e="m3_24"><b>x3 / 24h</b><span>apply</span></button>'+
+   '<button class="q" data-act="buff" data-e="bounty3"><b>Pomo bounty</b><span>3 uses</span></button>'+
+   '<button class="q" data-act="clearbuffs"><b>Clear buffs</b><span>remove all</span></button></div>'+
+   '<div class="sec-t">COUNTERS</div><div class="grid2">'+
+   '<button class="q" data-act="streak" data-n="1"><b>Streak +1</b><span>now '+S.streak+'d</span></button>'+
+   '<button class="q" data-act="streak" data-n="-99"><b>Streak reset</b><span>missed day</span></button>'+
+   '<button class="q" data-act="newday"><b>New day</b><span>reset pomo count</span></button>'+
+   '<button class="q" data-act="tokens0"><b>Zero tokens</b><span>hard reset balance</span></button></div>';
+ }
+ if(adminSub==="prizes"){
+  h+='<div class="sec-t">PRIZE TABLE EDITOR</div><div class="box dash"><div class="hint">'+
+   'Weights are relative, they do not need to add to 100. "Value $" is only used to compute the average payout below, '+
+   'so you can rebalance without redeploying. Targets: 1-token ~$0.25, 3 ~$2, 5 ~$5, 10 ~$10.</div></div>';
+  [1,3,5,10].forEach(function(p){
+   var P=S.pools[p],tot=poolTotal(p);
+   h+='<div class="sec-t">'+p+'-TOKEN POOL &middot; avg payout $'+poolEV(p).toFixed(2)+'</div><div class="box">'+
+    '<label class="f">POOL NAME</label><input data-ep="'+p+'" data-f="name" value="'+esc(P.name)+'">'+
+    '<label class="f">DESCRIPTION SHOWN TO HER</label><input data-ep="'+p+'" data-f="blurb" value="'+esc(P.blurb)+'">'+
+    '<div class="grid2"><div><label class="f">CARD CHANCE (0-1)</label>'+
+    '<input data-ep="'+p+'" data-f="cardChance" type="number" step="0.05" value="'+P.cardChance+'"></div>'+
+    '<div><label class="f">PITY PULLS</label><input data-ep="'+p+'" data-f="pity" type="number" value="'+P.pity+'"></div></div>';
+   P.items.forEach(function(i,ix){
+    h+='<div class="item"><div style="display:flex;justify-content:space-between;align-items:center">'+
+     '<b style="font-size:11px;color:'+(RCOLOR[i.r]||"#fff")+'">'+(tot?((i.w/tot)*100).toFixed(1):"0")+'%</b>'+
+     '<button class="btn no sm" style="width:auto;padding:5px 10px;margin:0" data-act="delitem" data-pool="'+p+'" data-i="'+ix+'">DELETE</button></div>'+
+     '<input data-ei="'+p+'" data-i="'+ix+'" data-f="p" value="'+esc(i.p)+'" placeholder="prize name">'+
+     '<textarea data-ei="'+p+'" data-i="'+ix+'" data-f="d" placeholder="description">'+esc(i.d)+'</textarea>'+
+     '<div class="grid2"><div><label class="f">WEIGHT</label>'+
+     '<input data-ei="'+p+'" data-i="'+ix+'" data-f="w" type="number" step="0.5" value="'+i.w+'"></div>'+
+     '<div><label class="f">VALUE $</label><input data-ei="'+p+'" data-i="'+ix+'" data-f="v" type="number" step="0.25" value="'+(i.v||0)+'"></div></div>'+
+     '<label class="f">RARITY</label><select data-ei="'+p+'" data-i="'+ix+'" data-f="r">'+
+     RARITIES.map(function(r){return '<option value="'+r+'"'+(i.r===r?" selected":"")+'>'+r+'</option>'}).join("")+'</select>'+
+     '<label class="f">EFFECT</label><select data-ei="'+p+'" data-i="'+ix+'" data-f="e">'+
+     Object.keys(EFFECTS).map(function(k){return '<option value="'+k+'"'+((i.e||"none")===k?" selected":"")+'>'+EFFECTS[k]+'</option>'}).join("")+'</select>'+
+     '<label class="f">SECRET (hidden in odds until won)</label><select data-ei="'+p+'" data-i="'+ix+'" data-f="s">'+
+     '<option value="0"'+(i.s?"":" selected")+'>no</option><option value="1"'+(i.s?" selected":"")+'>yes</option></select></div>';
+   });
+   h+='<button class="btn ghost sm" data-act="additem" data-pool="'+p+'">+ ADD PRIZE TO THIS POOL</button></div>';
+  });
+  h+='<button class="btn no" data-act="resetpools">RESET ALL POOLS TO DEFAULTS</button>';
+ }
+ if(adminSub==="cards"){
+  h+='<div class="sec-t">PHOTOCARD SETS</div><div class="box dash"><div class="hint">'+
+   'Upload an image per card. Images are resized to 680px JPEG and stored locally in this demo; '+
+   'on Firebase, push them to Storage and save the download URL in the card object.</div></div>';
+  S.sets.forEach(function(st,si){
+   h+='<div class="box"><div style="display:flex;justify-content:space-between;align-items:center">'+
+    '<b style="font-size:12.5px">'+esc(st.name)+(st.completed?" (done)":"")+(si===S.active?" &middot; ACTIVE":"")+'</b>'+
+    (si===S.active?"":'<button class="btn ghost sm" style="width:auto;padding:5px 10px;margin:0" data-act="setactive" data-i="'+si+'">MAKE ACTIVE</button>')+
+    '</div><label class="f">SET NAME</label><input data-es="'+si+'" data-f="name" value="'+esc(st.name)+'">';
+   st.cards.forEach(function(c,ci){
+    h+='<div class="item"><div style="display:flex;gap:9px;align-items:center">'+
+     '<div class="pc '+c.cls+'" style="width:54px;aspect-ratio:.68;flex:0 0 auto'+
+     (c.img?';background-image:url('+c.img+')':"")+'"></div><div style="flex:1">'+
+     '<input data-ec="'+si+'" data-i="'+ci+'" data-f="nm" value="'+esc(c.nm)+'" placeholder="name">'+
+     '<input data-ec="'+si+'" data-i="'+ci+'" data-f="ln" value="'+esc(c.ln)+'" placeholder="subtitle"></div></div>'+
+     '<div class="grid2"><div class="filerow"><button class="btn ghost sm">'+(c.img?"REPLACE IMG":"UPLOAD IMG")+
+     '</button><input type="file" accept="image/*" data-up="card" data-s="'+si+'" data-i="'+ci+'"></div>'+
+     '<button class="btn ghost sm" data-act="givecard" data-s="'+si+'" data-i="'+ci+'">GRANT (owned '+c.n+')</button></div></div>';
+   });
+   h+='<button class="btn ghost sm" data-act="addcard" data-s="'+si+'">+ ADD CARD SLOT</button></div>';
+  });
+  h+='<button class="btn" data-act="newset">+ CREATE NEW SET</button>';
+ }
+ if(adminSub==="tasks"){
+  h+='<div class="sec-t">TASKS AND SEASONAL EVENTS</div><div class="box dash"><div class="hint">'+
+   'Leave "days" blank for a permanent task. Set days for a limited event, e.g. "hang your posters, 2 tokens, 5 days". '+
+   'Expired events disappear from her list automatically.</div></div>';
+  S.tasks.forEach(function(t,ix){
+   h+='<div class="item"><input data-et="'+ix+'" data-f="label" value="'+esc(t.label)+'" placeholder="task name">'+
+    '<input data-et="'+ix+'" data-f="note" value="'+esc(t.note||"")+'" placeholder="proof required / note">'+
+    '<div class="grid2"><div><label class="f">TOKENS</label>'+
+    '<input data-et="'+ix+'" data-f="tok" type="number" value="'+t.tok+'"></div>'+
+    '<div><label class="f">EXPIRES IN DAYS</label><input data-et="'+ix+'" data-f="days" type="number" placeholder="permanent" value="'+
+    (t.until?Math.max(0,Math.ceil((t.until-Date.now())/864e5)):"")+'"></div></div>'+
+    '<button class="btn no sm" data-act="deltask" data-i="'+ix+'">DELETE TASK</button></div>';
+  });
+  h+='<button class="btn ghost" data-act="addtask">+ ADD TASK / EVENT</button>';
+ }
+ if(adminSub==="tools"){
+  h+='<div class="sec-t">AVERAGE PAYOUT CHECK</div><div class="box">';
+  [1,3,5,10].forEach(function(p){h+='<div class="orow"><div class="n">'+p+'-token pool ('+esc(S.pools[p].name)+
+   ')<small>total weight '+poolTotal(p)+'</small></div><div class="pct">$'+poolEV(p).toFixed(2)+'</div></div>'});
+  h+='<div class="hint" style="margin-top:8px">Cost per token if she earns 1 token per pomodoro: '+
+   [1,3,5,10].map(function(p){return p+"t = $"+(poolEV(p)/p).toFixed(2)+"/token"}).join(", ")+'</div></div>'+
+   '<div class="sec-t">BACKUP AND RESTORE</div><div class="box">'+
+   '<label class="f">CONFIG + STATE JSON</label><textarea id="cfg" spellcheck="false"></textarea>'+
+   '<button class="btn ghost sm" data-act="export">FILL WITH CURRENT STATE</button>'+
+   '<button class="btn sm" data-act="import">IMPORT FROM TEXTAREA</button></div>'+
+   '<div class="sec-t">MAINTENANCE</div><div class="grid2">'+
+   '<button class="q" data-act="clearphotos"><b>Clear log photos</b><span>frees storage</span></button>'+
+   '<button class="q" data-act="lock"><b>Lock admin</b><span>hide console</span></button>'+
+   '<button class="q" data-act="wipe"><b>Wipe everything</b><span>factory reset</span></button>'+
+   '<button class="q" data-act="reveal"><b>Reveal secrets</b><span>show hidden prizes</span></button></div>'+
+   '<div class="box dash"><div class="hint"><b>Firebase wiring</b><br>'+
+   '1. Create a Firestore project, add a web app, paste the config into a firebase-init script.<br>'+
+   '2. Replace DB.load / DB.save with onSnapshot("users/"+uid) and setDoc.<br>'+
+   '3. Photos: upload to Storage at users/{uid}/proofs/{id}.jpg, store the URL instead of the data URL.<br>'+
+   '4. Rules: she can read her own doc and create pending items; only /admins/{uid} can write tokens, pools, tasks, or approve. '+
+   'Without that rule the PIN can be bypassed from Safari devtools.</div></div>';
+ }
+ return h;
+}
+function render(){
+ head();
+ var m=$("#main");
+ m.innerHTML=tab==="spin"?viewSpin():tab==="cards"?viewCards():tab==="submit"?viewSubmit():
+  tab==="log"?viewLog():viewAdmin();
+ if(tab==="admin"&&unlocked&&adminSub==="tools"){var t=$("#cfg");if(t&&!t.value)t.placeholder="press fill";}
+}
 
-  if(initFirebase()){
-    loadState();
+/* ================== ACTIONS ================== */
+function grantTokens(n,title,meta,photo){
+ var mult=multNow(),amt=Math.round(n*mult*100)/100;
+ var bonus=0;
+ if(/pomodoro|pomo/i.test(title)){
+  for(var i=0;i<S.buffs.length;i++){var b=S.buffs[i];
+   if(b.kind==="bounty"&&b.uses>0){bonus=1;b.uses--;break}}
+ }
+ amt=Math.ceil(amt)+bonus;
+ S.tokens+=amt;
+ if(/pomodoro/i.test(title))S.pomosToday+=1;
+ pruneBuffs();
+ pushLog({type:"earn",title:title,meta:(meta||"approved")+(mult>1?" &middot; x"+mult+" buff":"")+(bonus?" &middot; +1 bounty":""),
+  value:"+"+amt,photo:photo||null});
+ save();render();toast("+"+amt+" tokens  "+title);
+}
+function applyEffect(e,cost){
+ if(!e||e==="none")return;
+ if(e.indexOf("m")===0){
+  var map={m15_24:[1.5,24],m2_24:[2,24],m2_72:[2,72],m3_24:[3,24]},cfg=map[e];
+  if(cfg){S.buffs.push({kind:"mult",value:cfg[0],label:"x"+cfg[0]+" tokens",until:Date.now()+cfg[1]*3600e3});return}
+ }
+ if(e==="bounty3"){S.buffs.push({kind:"bounty",label:"+1 token per pomodoro",uses:3,until:null});return}
+ if(e==="spin1")S.tokens+=1;
+ if(e==="spin3")S.tokens+=3;
+ if(e==="spin5")S.tokens+=5;
+ if(e==="spin10")S.tokens+=10;
+ if(e==="shards5")S.shards+=5;
+}
+function giveCard(cardIdx,silent){
+ var st=activeSet(),c=st.cards[cardIdx];if(!c)return null;
+ var isNew=!c.n;c.n++;if(!isNew)S.shards+=3;
+ pushLog({type:"card",title:"Photocard: "+c.nm,meta:isNew?"NEW &middot; "+st.name:"duplicate, +3 shards"});
+ if(st.cards.every(function(x){return x.n>0})){completeSet()}
+ save();if(!silent)render();
+ return{nm:c.nm,isNew:isNew};
+}
+function completeSet(){
+ var st=activeSet();st.completed=true;S.setsDone++;S.tokens+=10;
+ pushLog({type:"prize",title:"SET COMPLETE: "+st.name,
+  meta:"+5 tokens, free 5-token spin (5 tokens credited), one KWANGYA-tier prize",value:"+10"});
+ var next=-1;S.sets.forEach(function(s,i){if(!s.completed&&next<0)next=i});
+ if(next<0){
+  var clone=JSON.parse(JSON.stringify(st));
+  clone.id="s"+(S.sets.length+1);clone.name="ARMAGEDDON SET "+(S.sets.length+1);
+  clone.completed=false;clone.cards.forEach(function(c){c.n=0});
+  S.sets.push(clone);next=S.sets.length-1;
+ }
+ S.active=next;
+ setTimeout(function(){toast("SET COMPLETE. +10 tokens and a KWANGYA-tier prize.")},900);
+}
+function doSpin(cost,free){
+ var P=S.pools[cost];
+ if(!free){if(S.tokens<cost)return toast("Not enough tokens");S.tokens-=cost}
+ var R=$("#rev");R.className="show";
+ R.innerHTML='<div class="revcard"><div class="orb"></div><div style="letter-spacing:.3em;font-size:10.5px;color:#cbb8ff">SYNKING</div></div>';
+ setTimeout(function(){
+  S.pity[cost]=(S.pity[cost]||0)+1;
+  var item,forced=false;
+  var pool=P.items.filter(function(i){return (Number(i.w)||0)>0});
+  if(!pool.length){R.className="";return toast("That pool has no prizes with weight above zero")}
+  if(S.pity[cost]>=P.pity){
+   var good=pool.filter(function(i){return GOOD.indexOf(i.r)>-1});
+   item=good.length?rollItem(good):rollItem(pool);forced=true;S.pity[cost]=0;
+  }else{
+   item=rollItem(pool);if(GOOD.indexOf(item.r)>-1)S.pity[cost]=0;
   }
-})();
+  if(item.s&&S.revealed.indexOf(item.id)<0)S.revealed.push(item.id);
+  pushLog({type:"prize",title:item.p,meta:P.name+" &middot; "+item.r+(forced?" &middot; PITY BREAK":""),
+   value:free?"FREE":"-"+cost});
+  applyEffect(item.e,cost);
+  var pulls=[];
+  if(item.e==="setskip"){
+   var st=activeSet();st.cards.forEach(function(c,ix){if(!c.n)giveCard(ix,true)});
+  }else{
+   var want=item.e==="card2"?2:(item.e==="card1"?1:(Math.random()<P.cardChance?1:0));
+   for(var k=0;k<want;k++){
+    var st2=activeSet();
+    var missing=[];st2.cards.forEach(function(c,ix){if(!c.n)missing.push(ix)});
+    var from=(missing.length&&Math.random()<.75)?missing:st2.cards.map(function(c,ix){return ix});
+    var got=giveCard(from[Math.floor(Math.random()*from.length)],true);
+    if(got)pulls.push(got);
+   }
+  }
+  save();
+  var h='<div class="revcard"><div class="prizebox">'+
+   '<div class="rr" style="color:'+(RCOLOR[item.r]||"#fff")+'">'+esc(item.r)+
+   (forced?" &middot; PITY BREAK":"")+" &middot; "+esc(P.name)+'</div>'+
+   '<div class="rp">'+esc(item.p)+'</div><div class="rd">'+esc(item.d)+'</div>';
+  if(item.e&&item.e!=="none")h+='<div class="rd" style="margin-top:8px;color:#7bffcf">EFFECT: '+EFFECTS[item.e]+'</div>';
+  if(pulls.length){
+   h+='<div class="pcpull">PHOTOCARD: '+pulls.map(function(p){
+    return "<b>"+esc(p.nm)+"</b>"+(p.isNew?" NEW":" (dupe, +3 shards)")}).join(" + ")+
+    '<br><span style="color:rgba(255,255,255,.6);font-size:11px">'+owned()+"/"+activeSet().cards.length+
+    " in "+esc(activeSet().name)+'</span></div>';
+  }
+  h+='</div><button class="btn" data-act="close">COLLECT</button>';
+  if(S.tokens>=cost)h+='<button class="btn ghost" data-act="again" data-pool="'+cost+'">SPIN AGAIN &middot; '+cost+'</button>';
+  h+='</div>';
+  R.innerHTML=h;
+ },1400);
+}
+
+/* ================== EVENTS ================== */
+document.getElementById("nav").addEventListener("click",function(e){
+ var b=e.target.closest("button[data-tab]");if(!b)return;
+ tab=b.dataset.tab;
+ Array.prototype.forEach.call(this.querySelectorAll("button"),function(x){x.classList.toggle("on",x===b)});
+ $("#main").scrollTop=0;render();
+});
+document.body.addEventListener("click",function(e){
+ var b=e.target.closest("[data-act]");if(!b)return;
+ var a=b.dataset.act;
+ if(a==="spin"){doSpin(+b.dataset.pool);return}
+ if(a==="again"){$("#rev").className="";doSpin(+b.dataset.pool);return}
+ if(a==="close"){$("#rev").className="";render();return}
+ if(a==="odds"){var p=b.dataset.pool;openOdds[p]=!openOdds[p];render();return}
+ if(a==="shards"){if(S.shards<10)return;S.shards-=10;save();toast("Free 3-token spin");doSpin(3,true);return}
+ if(a==="pick"){draft.task=b.dataset.id;render();return}
+ if(a==="cancel"){draft={task:null,photo:null,note:""};render();return}
+ if(a==="send"){
+  var T=null;S.tasks.forEach(function(t){if(t.id===draft.task)T=t});
+  if(!T)return toast("Pick a task first");
+  if(!draft.photo&&!confirm("Send without a photo?"))return;
+  S.pending.push({id:uid(),taskId:T.id,label:T.label,tok:T.tok,note:draft.note,photo:draft.photo,ts:Date.now()});
+  pushLog({type:"admin",title:"Submitted: "+T.label,meta:"waiting on approval"});
+  draft={task:null,photo:null,note:""};save();render();toast("Sent for approval");return;
+ }
+ if(a==="unlock"){
+  if($("#pin").value===ADMIN_PIN){unlocked=true;render();toast("Admin unlocked")}else toast("Wrong PIN");return;
+ }
+ if(a==="lock"){unlocked=false;render();return}
+ if(a==="sub"){adminSub=b.dataset.k;$("#main").scrollTop=0;render();return}
+ if(!unlocked&&["ok","no","quick","custom","buff","clearbuffs","streak","newday","tokens0","additem",
+  "delitem","resetpools","givecard","addcard","newset","setactive","addtask","deltask","export","import",
+  "clearphotos","wipe","reveal"].indexOf(a)>-1){return}
+ if(a==="ok"){
+  var id=b.dataset.id,ix=-1;S.pending.forEach(function(p,i){if(p.id===id)ix=i});
+  if(ix<0)return;var pn=S.pending[ix];
+  var ov=document.querySelector('[data-adj="'+id+'"]');
+  var amt=ov&&ov.value!==""?parseInt(ov.value,10):pn.tok;
+  if(isNaN(amt))amt=pn.tok;
+  S.pending.splice(ix,1);
+  grantTokens(amt,pn.label,"approved from queue"+(pn.note?' &middot; "'+pn.note+'"':""),pn.photo);
+  return;
+ }
+ if(a==="no"){
+  var id2=b.dataset.id,ix2=-1;S.pending.forEach(function(p,i){if(p.id===id2)ix2=i});
+  if(ix2<0)return;var pn2=S.pending[ix2];
+  var why=prompt("Reason (she will see this):","need a clearer photo");
+  S.pending.splice(ix2,1);
+  pushLog({type:"reject",title:"Not approved: "+pn2.label,meta:why||"declined"});
+  save();render();toast("Rejected and logged");return;
+ }
+ if(a==="quick"){var t=null;S.tasks.forEach(function(x){if(x.id===b.dataset.id)t=x});
+  if(t)grantTokens(t.tok,t.label,"quick grant");return}
+ if(a==="custom"){
+  var ti=$("#cT").value.trim(),v=parseInt($("#cV").value,10);
+  if(!ti||isNaN(v))return toast("Need a title and a number");
+  if(v>=0){grantTokens(v,ti,$("#cM").value||"manual entry")}
+  else{S.tokens=Math.max(0,S.tokens+v);
+   pushLog({type:"prize",title:ti,meta:$("#cM").value||"manual deduction",value:""+v});save();render();toast("Logged")}
+  return;
+ }
+ if(a==="buff"){applyEffect(b.dataset.e);pushLog({type:"admin",title:"Buff applied: "+EFFECTS[b.dataset.e],meta:"admin"});
+  save();render();toast("Buff active");return}
+ if(a==="clearbuffs"){S.buffs=[];save();render();toast("Buffs cleared");return}
+ if(a==="streak"){var n=+b.dataset.n;S.streak=n===-99?0:Math.max(0,S.streak+n);save();render();return}
+ if(a==="newday"){S.pomosToday=0;save();render();toast("Daily counters reset");return}
+ if(a==="tokens0"){if(confirm("Set token balance to 0?")){S.tokens=0;save();render()}return}
+ if(a==="additem"){
+  var pp=b.dataset.pool;
+  S.pools[pp].items.push({id:uid(),w:5,r:"COMMON",p:"New prize",d:"Describe it.",v:0,e:"none"});
+  save();render();return;
+ }
+ if(a==="delitem"){
+  if(!confirm("Delete this prize?"))return;
+  S.pools[b.dataset.pool].items.splice(+b.dataset.i,1);save();render();return;
+ }
+ if(a==="resetpools"){if(confirm("Reset all four prize tables to defaults?")){S.pools=defPools();save();render();toast("Pools reset")}return}
+ if(a==="givecard"){S.active=+b.dataset.s;giveCard(+b.dataset.i);toast("Card granted");return}
+ if(a==="addcard"){
+  var st=S.sets[+b.dataset.s];
+  st.cards.push({id:uid(),nm:"NEW CARD",ln:"subtitle",cls:["k","w","g","n"][st.cards.length%4],img:null,n:0});
+  save();render();return;
+ }
+ if(a==="newset"){
+  var s=defSet(S.sets.length+1);s.name="SET "+(S.sets.length+1);S.sets.push(s);save();render();toast("Set created");return;
+ }
+ if(a==="setactive"){S.active=+b.dataset.i;save();render();toast("Active set changed");return}
+ if(a==="addtask"){S.tasks.push({id:uid(),label:"New task",tok:1,note:"proof needed",until:null});save();render();return}
+ if(a==="deltask"){if(!confirm("Delete this task?"))return;S.tasks.splice(+b.dataset.i,1);save();render();return}
+ if(a==="export"){$("#cfg").value=JSON.stringify(S);toast("Copy this somewhere safe");return}
+ if(a==="import"){
+  try{var o=JSON.parse($("#cfg").value);if(!o.pools||!o.tasks)throw 0;S=o;S.v=VER;save();render();toast("Imported")}
+  catch(err){toast("That is not valid ae-QUEST JSON")}return;
+ }
+ if(a==="clearphotos"){S.log.forEach(function(l){l.photo=null});
+  S.pending.forEach(function(p){p.photo=null});save();render();toast("Photos cleared");return}
+ if(a==="reveal"){S.pools[1].items.concat(S.pools[3].items,S.pools[5].items,S.pools[10].items)
+  .forEach(function(i){if(i.s&&S.revealed.indexOf(i.id)<0)S.revealed.push(i.id)});save();render();toast("Secrets revealed");return}
+ if(a==="wipe"){if(confirm("Wipe all data and start over?")){localStorage.removeItem(DB.key);location.reload()}return}
+});
+document.body.addEventListener("change",function(e){
+ var el=e.target,d=el.dataset;
+ if(d.up){
+  var f=el.files&&el.files[0];if(!f)return;
+  shrink(f,function(url){
+   if(d.up==="proof"){draft.photo=url;render()}
+   if(d.up==="card"){S.sets[+d.s].cards[+d.i].img=url;save();render();toast("Image saved")}
+  });return;
+ }
+ if(d.d==="note"){draft.note=el.value;return}
+ if(d.ep){var P=S.pools[d.ep];
+  if(d.f==="cardChance")P.cardChance=Math.min(1,Math.max(0,parseFloat(el.value)||0));
+  else if(d.f==="pity")P.pity=Math.max(1,parseInt(el.value,10)||1);
+  else P[d.f]=el.value;
+  save();render();return}
+ if(d.ei){var it=S.pools[d.ei].items[+d.i];if(!it)return;
+  if(d.f==="w")it.w=Math.max(0,parseFloat(el.value)||0);
+  else if(d.f==="v")it.v=Math.max(0,parseFloat(el.value)||0);
+  else if(d.f==="s")it.s=el.value==="1"?1:0;
+  else it[d.f]=el.value;
+  save();render();return}
+ if(d.es){S.sets[+d.es][d.f]=el.value;save();render();return}
+ if(d.ec){S.sets[+d.ec].cards[+d.i][d.f]=el.value;save();render();return}
+ if(d.et){var t=S.tasks[+d.et];if(!t)return;
+  if(d.f==="tok")t.tok=parseInt(el.value,10)||0;
+  else if(d.f==="days"){var v=parseInt(el.value,10);t.until=(!v||v<=0)?null:Date.now()+v*864e5}
+  else t[d.f]=el.value;
+  save();render();return}
+});
+render();
 </script>
+</body>
+</html>
