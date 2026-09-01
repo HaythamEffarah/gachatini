@@ -125,6 +125,26 @@ backdrop-filter:blur(14px);border-radius:13px;padding:11px 13px;font-size:12px;z
 .filerow{position:relative;overflow:hidden;display:block}
 .filerow input[type=file]{position:absolute;inset:0;opacity:0;width:100%;height:100%}
 </style>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, onSnapshot }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDDkhh9SGLJLEg7IA9HjoPSGDuhOfDYFXI",
+    authDomain: "gachatini.firebaseapp.com",
+    databaseURL: "https://gachatini-default-rtdb.firebaseio.com",
+    projectId: "gachatini",
+    storageBucket: "gachatini.firebasestorage.app",
+    messagingSenderId: "150375258373",
+    appId: "1:150375258373:web:8b5ec2fdd7a5b7033aff6c"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
 </head>
 <body>
 <div id="app">
