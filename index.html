@@ -239,19 +239,18 @@ var APP_PIN="6767"; // <- change this to your desired 4-digit PIN
 
 /* ---------- defaults ---------- */
 function defPools(){return{
-1:{name:"REAL WORLD",tag:"1 TOKEN",cardChance:.15,pity:10,
-   blurb:"Micro-treats and buffs. Cheap, frequent dopamine.",items:[
- {id:"a1",w:20,r:"BUFF",p:"x1.5 Token Day",d:"Every token you earn for the next 24h is worth 1.5x.",v:0,e:"m15_24"},
- {id:"a2",w:14,r:"BUFF",p:"Pomo Bounty",d:"Your next 3 pomodoros pay +1 extra token each.",v:0,e:"bounty3"},
- {id:"a3",w:10,r:"BUFF",p:"Free Respin",d:"This pull is refunded. Spin again on the house.",v:0,e:"spin1"},
- {id:"a4",w:8,r:"RARE",p:"Guaranteed Photocard",d:"A photocard drops for sure on this pull.",v:0,e:"card1"},
- {id:"a5",w:8,r:"DUD",p:"Naevis says: nothing",d:"Empty pull. Pity counter still ticks up.",v:0,e:"none"},
- {id:"a6",w:6,r:"COMMON",p:"Song Request",d:"I have to listen to an aespa track of your choice and write a real review.",v:0,e:"none"},
- {id:"a7",w:15,r:"COMMON",p:"$0.25 sticker pick",d:"One sticker from the stash, your pick.",v:.25,e:"none"},
- {id:"a8",w:11,r:"COMMON",p:"$0.50 candy",d:"Corner-store candy of choice.",v:.5,e:"none"},
- {id:"a9",w:5,r:"COMMON",p:"$1 coffee credit",d:"A dollar off your next coffee.",v:1,e:"none"},
- {id:"a10",w:2,r:"RARE",p:"$2 snack run",d:"Two dollars of snack, no questions.",v:2,e:"none"},
- {id:"a11",w:1,r:"SECRET",p:"SECRET: $5 bonus drop",d:"Five dollars, no strings. Rare little jackpot.",v:5,e:"none",s:1}]},
+1:{name:"REAL WORLD",tag:"1 TOKEN",cardChance:.10,pity:10,
+   blurb:"Micro-treats and buffs.",items:[
+ {id:"a1",w:20,r:"COMMON",p:"$0.25",d:"You got a quarter. Yippee!",v:0.25,e:"none"},
+ {id:"a2",w:18,r:"COMMON",p:"$0.50",d:"Take me to the candy shop! Let me lick the lollipop!",v:0.5,e:"none"},
+ {id:"a3",w:15,r:"COMMON",p:"One Token",d:"You made your token back! That's nice.",v:0,e:"spin1"},
+ {id:"a4",w:10,r:"RARE",p:"Guaranteed Photocard",d:"A photocard drops for sure on this pull.",v:0,e:"card1"},
+ {id:"a5",w:10,r:"DUD",p:"Naevis says: nothing",d:"Empty pull. Pity counter still ticks up.",v:0,e:"none"},
+ {id:"a6",w:8,r:"BUFF",p:"Pomo Bounty",d:"+1 tokens for next three pomodoros",v:0,e:"bounty3"},
+ {id:"a7",w:8,r:"BUFF",p:"Double tokens for a day!",d:"x2 tokens for 24 hours. Get studying!",v:0,e:"m2_24"},
+ {id:"a8",w:6,r:"EPIC",p:"$1.00",d:"You got the 1-token jackpot!",v:1,e:"none"},
+ {id:"a9",w:4,r:"EPIC",p:"Three tokens!",d:"3 tokens for the price of 1? Gambling works!",v:0,e:"spin3"},
+ {id:"a10",w:1,r:"MYTHIC",p:"SECRET: OH SHIT $3!",d:"$3 for 1 token? I'm being robbed!",v:3,e:"none",s:1}]},
 3:{name:"SYNK DIVE",tag:"3 TOKENS",cardChance:.32,pity:8,
    blurb:"$1-8 range. Food credit and small aespa goods.",items:[
  {id:"b1",w:12,r:"BUFF",p:"x2 Token Day",d:"24 hours of double tokens. Stack it with a big work day.",v:0,e:"m2_24"},
