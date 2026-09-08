@@ -318,7 +318,7 @@ var _docRef = null;
 
 function initApp(){
   if(window._aedb){
-    document.getElementById("mode").textContent="CLOUD SYNC v1.1";
+    document.getElementById("mode").textContent="CLOUD SYNC v1.2";
     _docRef=window._aedb.collection("aequest").doc("state");
     _docRef.get().then(function(snap){
       S=snap.exists?snap.data():defState();
@@ -774,8 +774,8 @@ function doSpin(cost,free){
   if(item.e==="setskip"){var st=activeSet();st.cards.forEach(function(c,ix){if(!c.n)giveCard(ix,true)});}
   else{var want=item.e==="card2"?2:(item.e==="card1"?1:(Math.random()<P.cardChance?1:0));
    for(var k=0;k<want;k++){var st2=activeSet();
-    var missing=[];st2.cards.forEach(function(c,ix){if(!c.n)missing.push(ix)});
-    var from=(missing.length&&Math.random()<.75)?missing:st2.cards.map(function(c,ix){return ix});
+    // var missing=[];st2.cards.forEach(function(c,ix){if(!c.n)missing.push(ix)});
+    var from=st2.cards.map(function(c,ix){return ix});
     var got=giveCard(from[Math.floor(Math.random()*from.length)],true);if(got)pulls.push(got);}}
   save();
   var h='<div class="revcard"><div class="prizebox">'+
