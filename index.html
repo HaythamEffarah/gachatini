@@ -3,20 +3,32 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>ae-QUEST</title>
 
 <!-- ===============================================================
-     FIREBASE - cross-device sync (optional).
-     Without it the app uses localStorage automatically - still works!
-     TO ENABLE:
-       1. console.firebase.google.com -> your project -> Settings -> Web app
-       2. Copy your firebaseConfig values and paste them below
-       3. Remove the opening and closing comment markers around the block
+     FIREBASE + STORAGE - cross-device sync with cloud image hosting.
+     Without it the app uses localStorage automatically.
+     Paste your firebaseConfig values below.
+
+     FIRESTORE RULES (console -> Firestore -> Rules):
+       rules_version = '2';
+       service cloud.firestore {
+         match /databases/{database}/documents {
+           match /aequest/state { allow read, write: if true; }
+         }
+       }
+
+     STORAGE RULES (console -> Storage -> Rules):
+       rules_version = '2';
+       service firebase.storage {
+         match /b/{bucket}/o {
+           match /aequest/{allPaths=**} { allow read, write: if true; }
+         }
+       }
      =============================================================== -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 <script>
   firebase.initializeApp({
     apiKey:            "AIzaSyDDkhh9SGLJLEg7IA9HjoPSGDuhOfDYFXI",
@@ -27,19 +39,8 @@
     appId:             "1:150375258373:web:8b5ec2fdd7a5b7033aff6c"
   });
   window._aedb = firebase.firestore();
+  window._aestorage = firebase.storage();
 </script>
-<!-- ===============================================================
-     FIRESTORE RULES to paste in Firebase console -> Firestore -> Rules tab:
-
-     rules_version = '2';
-     service cloud.firestore {
-       match /databases/{database}/documents {
-         match /aequest/state {
-           allow read, write: if true;
-         }
-       }
-     }
-     =============================================================== -->
 
 <style>
 :root{--line:rgba(255,255,255,.13);--card:rgba(255,255,255,.06);--txt:#f2f0ff;--dim:#a099c4;
@@ -104,7 +105,7 @@ border-radius:11px;padding:8px;font-size:10px;letter-spacing:.14em;font-weight:7
 .odds{margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
 .orow{display:flex;justify-content:space-between;gap:8px;padding:5px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,.05)}
 .orow .n{flex:1}.orow .pct{font-weight:800;font-variant-numeric:tabular-nums}
-.orow small{display:block;color:#000;font-size:9.5px;margin-top:1px}
+.orow small{display:block;color:var(--dim);font-size:9.5px;margin-top:1px}
 .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .pc{border-radius:16px;border:1px solid var(--line);position:relative;aspect-ratio:.68;overflow:hidden;
 background-size:cover;background-position:center}
@@ -116,7 +117,7 @@ background:linear-gradient(transparent 45%,rgba(0,0,0,.72))}
 .pc.locked{filter:grayscale(1) brightness(.4)}
 .pc.locked .face:after{content:"?";position:absolute;top:36%;left:50%;transform:translate(-50%,-50%);font-size:30px;font-weight:800;opacity:.7}
 .k{background-image:linear-gradient(160deg,#ff7ac2,#7b2ff7)}.w{background-image:linear-gradient(160deg,#8fe9ff,#2b6bff)}
-.g{background-image:linear-gradient(160deg,#ffd88a,#ff5f6d)}.n{background-image:linear-gradient(160deg,#498a4e,#00b3a4)}
+.g{background-image:linear-gradient(160deg,#ffd88a,#ff5f6d)}.n{background-image:linear-gradient(160deg,#b6ff9c,#00b3a4)}
 .box{border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:10px;background:rgba(255,255,255,.035)}
 .box.dash{border-style:dashed}
 .hint{font-size:10.5px;color:var(--dim);line-height:1.55}
@@ -235,7 +236,7 @@ border:1px solid rgba(0,229,255,.3);border-radius:16px;padding:13px;margin-top:6
 <script>
 var VER=3;
 var ADMIN_PIN="0420";
-var APP_PIN="6767"; // <- change this to your desired 4-digit PIN
+var APP_PIN="0420"; // <- change this to your desired 4-digit PIN
 
 /* ---------- defaults ---------- */
 function defPools(){return{
@@ -846,6 +847,13 @@ document.body.addEventListener("change",function(e){
  if(d.up){var f=el.files&&el.files[0];if(!f)return;
   shrink(f,function(url){if(d.up==="proof"){draft.photo=url;render()}
    if(d.up==="card"){S.sets[+d.s].cards[+d.i].img=url;save();render();toast("Image saved")}});return;}
+    uploadImage(blob,"aequest/proofs/"+Date.now()+".jpg",function(url){draft.photo=url;render();});
+   }
+   if(d.up==="card"){
+    uploadImage(blob,"aequest/cards/"+d.s+"_"+d.i+"_"+Date.now()+".jpg",function(url){
+     S.sets[+d.s].cards[+d.i].img=url;save();render();toast("Image saved");});
+   }
+  });return;}
  if(d.d==="note"){draft.note=el.value;return}
  if(d.ep){var P=S.pools[d.ep];
   if(d.f==="cardChance")P.cardChance=Math.min(1,Math.max(0,parseFloat(el.value)||0));
