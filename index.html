@@ -214,7 +214,12 @@ border:1px solid rgba(0,229,255,.3);border-radius:16px;padding:13px;margin-top:6
 <header>
   <div class="brand"><div class="logo">ae-QUEST</div><div class="who" id="mode">LOCAL</div></div>
   <div class="balance">
-    <div class="bal-row"><div class="bal-n" id="bal">0</div><div class="bal-l">SYNK TOKENS</div></div>
+    <div class="bal-row"><div class="bal-n" id="bal">0</div><div class="bal-l">SYNK TOKENS</div>
+      <div style="margin-left:auto;text-align:right">
+        <div class="bal-n" id="money" style="font-size:28px;color:var(--gold)">$0</div>
+        <div class="bal-l">EARNED</div>
+      </div>
+    </div>
     <div class="chips">
       <span class="chip" id="chStreak"></span><span class="chip" id="chPomo"></span>
       <span class="chip" id="chMult"></span><span class="chip" id="chCards"></span><span class="chip" id="chShard"></span>
@@ -306,7 +311,7 @@ function defSet(n){return{id:"s"+n,name:"ARMAGEDDON SET "+n,completed:false,card
  {id:"giselle",nm:"GISELLE",ln:"Sound",cls:"g",img:null,n:0},
  {id:"winter",nm:"WINTER",ln:"Frost",cls:"w",img:null,n:0},
  {id:"ningning",nm:"NINGNING",ln:"Voice",cls:"n",img:null,n:0}]};}
-function defState(){return{v:VER,tokens:0,lifetimeTokens:0,streak:0,pomosToday:0,shards:0,setsDone:0,
+function defState(){return{v:VER,tokens:0,money:0,lifetimeTokens:0,streak:0,pomosToday:0,shards:0,setsDone:0,
  pity:{1:0,3:0,5:0,10:0},buffs:[],revealed:[],pools:defPools(),tasks:defTasks(),
  sets:[defSet(1)],active:0,pending:[],log:[],seq:100};}
 
@@ -318,7 +323,7 @@ var _docRef = null;
 
 function initApp(){
   if(window._aedb){
-    document.getElementById("mode").textContent="CLOUD SYNC v1.2";
+    document.getElementById("mode").textContent="CLOUD SYNC v1.3";
     _docRef=window._aedb.collection("aequest").doc("state");
     _docRef.get().then(function(snap){
       S=snap.exists?snap.data():defState();
@@ -348,6 +353,7 @@ function _loadLocal(){
 }
 function _migrate(){
   if(S.lifetimeTokens==null)S.lifetimeTokens=0;
+  if(S.money==null)S.money=0;
   S.tasks.forEach(function(t){if(t.unlockAt==null)t.unlockAt=0;});
 }
 function save(){
@@ -408,7 +414,9 @@ function owned(){var st=activeSet();return st.cards.filter(function(c){return c.
 function pushLog(o){o.ts=Date.now();o.id=uid();S.log.unshift(o);if(S.log.length>400)S.log.length=400;save()}
 function pruneBuffs(){S.buffs=S.buffs.filter(function(b){
  if(b.until&&Date.now()>b.until)return false;if(b.uses!=null&&b.uses<=0)return false;return true})}
-function multNow(){pruneBuffs();var m=1;S.buffs.forEach(function(b){if(b.kind==="mult"&&b.value>m)m=b.value});return m}
+// function multNow(){pruneBuffs();var m=1;S.buffs.forEach(function(b){if(b.kind==="mult"&&b.value>m)m=b.value});return m}
+// Updated multipliers so they stack now
+function multNow(){pruneBuffs();var m=1;S.buffs.forEach(function(b){if(b.kind==="mult")m*=b.value});return m}
 function poolTotal(p){var t=0;S.pools[p].items.forEach(function(i){t+=Number(i.w)||0});return t}
 function poolEV(p){var t=poolTotal(p),s=0;if(!t)return 0;
  S.pools[p].items.forEach(function(i){s+=(Number(i.w)||0)*(Number(i.v)||0)});return s/t}
@@ -428,6 +436,7 @@ function checkUnlocks(prevLT,currLT){
 function head(){
  pruneBuffs();
  $("#bal").textContent=S.tokens;
+ $("#money").textContent="$"+(S.money||0).toFixed(2);
  $("#chStreak").textContent="streak "+S.streak+"d";
  $("#chPomo").textContent=S.pomosToday+" pomos today";
  var m=multNow(),c=$("#chMult");c.textContent="x"+m.toFixed(1)+" tokens";c.className="chip"+(m>1?" hot":"");
@@ -596,6 +605,9 @@ function viewAdmin(){
   h+='</div><div class="sec-t">CUSTOM ENTRY</div><div class="box">'+
    '<input id="cT" placeholder="What she did"><input id="cV" type="number" inputmode="numeric" placeholder="Tokens (negative deducts)">'+
    '<input id="cM" placeholder="Note / timestamp"><button class="btn" data-act="custom">CREDIT AND LOG</button></div>'+
+   '<div class="sec-t">MONEY COUNTER ($'+(S.money||0).toFixed(2)+')</div><div class="box">'+
+   '<input id="mMoney" type="number" step="0.01" inputmode="decimal" placeholder="amount (negative subtracts)">'+
+   '<button class="btn" data-act="money">ADJUST MONEY</button></div>'+
    '<div class="sec-t">APPLY BUFF MANUALLY</div><div class="grid2">'+
    '<button class="q" data-act="buff" data-e="m15_24"><b>x1.5 / 24h</b><span>apply</span></button>'+
    '<button class="q" data-act="buff" data-e="m2_24"><b>x2 / 24h</b><span>apply</span></button>'+
@@ -769,6 +781,7 @@ function doSpin(cost,free){
   else{item=rollItem(pool);if(GOOD.indexOf(item.r)>-1)S.pity[cost]=0;}
   if(item.s&&S.revealed.indexOf(item.id)<0)S.revealed.push(item.id);
   pushLog({type:"prize",title:item.p,meta:P.name+" &middot; "+item.r+(forced?" &middot; PITY BREAK":""),value:free?"FREE":"-"+cost});
+  if(item.v>0)S.money=Math.round(((S.money||0)+item.v)*100)/100;
   applyEffect(item.e);
   var pulls=[];
   if(item.e==="setskip"){var st=activeSet();st.cards.forEach(function(c,ix){if(!c.n)giveCard(ix,true)});}
@@ -819,7 +832,7 @@ document.body.addEventListener("click",function(e){
  if(a==="unlock"){if($("#pin").value===ADMIN_PIN){unlocked=true;render();toast("Admin unlocked")}else toast("Wrong PIN");return;}
  if(a==="lock"){unlocked=false;render();return}
  if(a==="sub"){adminSub=b.dataset.k;$("#main").scrollTop=0;render();return}
- if(!unlocked&&["ok","no","quick","custom","buff","clearbuffs","streak","newday","tokens0","additem",
+ if(!unlocked&&["ok","no","quick","custom","money","buff","clearbuffs","streak","newday","tokens0","additem",
   "delitem","resetpools","givecard","addcard","newset","setactive","addtask","deltask","export","import",
   "clearphotos","wipe","reveal"].indexOf(a)>-1)return;
  if(a==="ok"){
@@ -842,6 +855,10 @@ document.body.addEventListener("click",function(e){
   if(v>=0)grantTokens(v,ti,$("#cM").value||"manual entry");
   else{S.tokens=Math.max(0,S.tokens+v);pushLog({type:"prize",title:ti,meta:$("#cM").value||"manual deduction",value:""+v});save();render();toast("Logged")}
   return;}
+ if(a==="money"){var mv=parseFloat($("#mMoney").value);if(isNaN(mv))return toast("Enter a number");
+  S.money=Math.round(((S.money||0)+mv)*100)/100;
+  pushLog({type:"prize",title:"Money adjusted",meta:"admin",value:(mv>=0?"+$":"-$")+Math.abs(mv).toFixed(2)});
+  save();render();toast("Money updated");return;}
  if(a==="buff"){applyEffect(b.dataset.e);pushLog({type:"admin",title:"Buff applied: "+EFFECTS[b.dataset.e],meta:"admin"});save();render();toast("Buff active");return}
  if(a==="clearbuffs"){S.buffs=[];save();render();toast("Buffs cleared");return}
  if(a==="streak"){var n=+b.dataset.n;S.streak=n===-99?0:Math.max(0,S.streak+n);save();render();return}
@@ -858,7 +875,7 @@ document.body.addEventListener("click",function(e){
  if(a==="deltask"){if(!confirm("Delete this task?"))return;S.tasks.splice(+b.dataset.i,1);save();render();return}
  if(a==="export"){$("#cfg").value=JSON.stringify(S);toast("Copy this somewhere safe");return}
  if(a==="import"){try{var o=JSON.parse($("#cfg").value);if(!o.pools||!o.tasks)throw 0;S=o;S.v=VER;
-  if(S.lifetimeTokens==null)S.lifetimeTokens=0;S.tasks.forEach(function(t){if(t.unlockAt==null)t.unlockAt=0;});
+  if(S.lifetimeTokens==null)S.lifetimeTokens=0;if(S.money==null)S.money=0;S.tasks.forEach(function(t){if(t.unlockAt==null)t.unlockAt=0;});
   save();render();toast("Imported")}catch(err){toast("Not valid ae-QUEST JSON")}return;}
  if(a==="clearphotos"){S.log.forEach(function(l){l.photo=null});S.pending.forEach(function(p){p.photo=null});save();render();toast("Photos cleared");return}
  if(a==="reveal"){S.pools[1].items.concat(S.pools[3].items,S.pools[5].items,S.pools[10].items)
