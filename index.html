@@ -790,6 +790,7 @@ function doSpin(cost,free){
     // var missing=[];st2.cards.forEach(function(c,ix){if(!c.n)missing.push(ix)});
     var from=st2.cards.map(function(c,ix){return ix});
     var got=giveCard(from[Math.floor(Math.random()*from.length)],true);if(got)pulls.push(got);}}
+  if(pulls.length)S.pity[cost]=0;   // any photocard obtained resets pity
   save();
   var h='<div class="revcard"><div class="prizebox">'+
    '<div class="rr" style="color:'+(RCOLOR[item.r]||"#fff")+'">'+esc(item.r)+(forced?" &middot; PITY BREAK":"")+' &middot; '+esc(P.name)+'</div>'+
