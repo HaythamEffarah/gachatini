@@ -117,7 +117,7 @@ background:linear-gradient(transparent 45%,rgba(0,0,0,.72))}
 .pc.locked{filter:grayscale(1) brightness(.4)}
 .pc.locked .face:after{content:"?";position:absolute;top:36%;left:50%;transform:translate(-50%,-50%);font-size:30px;font-weight:800;opacity:.7}
 .k{background-image:linear-gradient(160deg,#ff7ac2,#7b2ff7)}.w{background-image:linear-gradient(160deg,#8fe9ff,#2b6bff)}
-.g{background-image:linear-gradient(160deg,#ffd88a,#ff5f6d)}.n{background-image:linear-gradient(160deg,#b6ff9c,#00b3a4)}
+.g{background-image:linear-gradient(160deg,#ffd88a,#ff5f6d)}.n{background-image:linear-gradient(160deg,#134600,#00b3a4)}
 .box{border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:10px;background:rgba(255,255,255,.035)}
 .box.dash{border-style:dashed}
 .hint{font-size:10.5px;color:var(--dim);line-height:1.55}
@@ -745,8 +745,8 @@ function grantTokens(n,title,meta,photo){
 function applyEffect(e){
  if(!e||e==="none")return;
  if(e.indexOf("m")===0){var map={m15_24:[1.5,24],m2_24:[2,24],m2_72:[2,72],m3_24:[3,24]},cfg=map[e];
-  if(cfg){S.buffs.push({kind:"mult",value:cfg[0],label:"x"+cfg[0]+" tokens",until:Date.now()+cfg[1]*3600e3});return}}
- if(e==="bounty3"){S.buffs.push({kind:"bounty",label:"+1 token per pomodoro",uses:3,until:null});return}
+  if(cfg){S.buffs.push({kind:"mult",value:cfg[0],label:"x"+cfg[0]+" tokens",until:Date.now()+cfg[1]*3600e3,eff:e});return}}
+ if(e==="bounty3"){S.buffs.push({kind:"bounty",label:"+1 token per pomodoro",uses:3,until:null,eff:e});return}
  if(e==="spin1")S.tokens+=1;if(e==="spin3")S.tokens+=3;if(e==="spin5")S.tokens+=5;if(e==="spin10")S.tokens+=10;
  if(e==="shards5")S.shards+=5;
 }
@@ -774,7 +774,14 @@ function doSpin(cost,free){
  setTimeout(function(){
   S.pity[cost]=(S.pity[cost]||0)+1;
   var item,forced=false;
-  var pool=P.items.filter(function(i){return(Number(i.w)||0)>0});
+  // var pool=P.items.filter(function(i){return(Number(i.w)||0)>0});
+  pruneBuffs();
+  var activeEffs=S.buffs.map(function(b){return b.eff});
+  var pool=P.items.filter(function(i){
+    if((Number(i.w)||0)<=0)return false;
+    if(i.e&&activeEffs.indexOf(i.e)>-1)return false; // this buff is already active - remove it
+    return true;
+  });
   if(!pool.length){R.className="";return toast("That pool has no prizes with weight above zero")}
   if(S.pity[cost]>=P.pity){var good=pool.filter(function(i){return GOOD.indexOf(i.r)>-1});
    item=good.length?rollItem(good):rollItem(pool);forced=true;S.pity[cost]=0;}
