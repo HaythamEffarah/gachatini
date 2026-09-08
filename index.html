@@ -318,12 +318,18 @@ var _docRef = null;
 
 function initApp(){
   if(window._aedb){
-    document.getElementById("mode").textContent="CLOUD SYNC";
+    document.getElementById("mode").textContent="CLOUD SYNC v1.1";
     _docRef=window._aedb.collection("aequest").doc("state");
     _docRef.get().then(function(snap){
       S=snap.exists?snap.data():defState();
       _migrate();
       render();
+      /* live listener so devices stay in sync */
+      _docRef.onSnapshot(function(snap){
+        if(snap.exists && !snap.metadata.hasPendingWrites){
+          S=snap.data();_migrate();render();
+        }
+      });
     }).catch(function(e){
       console.warn("Firestore load failed, falling back to localStorage",e);
       _loadLocal();
@@ -348,11 +354,34 @@ function save(){
   if(_docRef){
     _docRef.set(JSON.parse(JSON.stringify(S))).catch(function(e){
       console.warn("Firestore save error",e);
+      toast("\u26A0\uFE0F Cloud save failed: "+(e.message||e.code||"unknown"));
     });
   } else {
     try{localStorage.setItem("aequest_v3",JSON.stringify(S))}
     catch(e){toast("Storage full. Clear old photos in Admin > Tools.");}
   }
+}
+/* ---------- image helpers: upload to Storage, save URL ---------- */
+function shrinkBlob(file,cb){
+  var r=new FileReader();
+  r.onload=function(){var im=new Image();
+    im.onload=function(){var mx=680,sc=Math.min(1,mx/Math.max(im.width,im.height));
+      var c=document.createElement("canvas");
+      c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);
+      c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+      c.toBlob(function(b){cb(b)},"image/jpeg",.62);};
+    im.onerror=function(){toast("Could not read that image")};im.src=r.result};
+  r.readAsDataURL(file);
+}
+function uploadImage(blob,path,cb){
+  if(!window._aestorage){ /* no Storage - fall back to base64 data URL */
+    var fr=new FileReader();fr.onload=function(){cb(fr.result)};fr.readAsDataURL(blob);return;
+  }
+  toast("Uploading image\u2026");
+  var ref=window._aestorage.ref().child(path);
+  ref.put(blob).then(function(s){return s.ref.getDownloadURL();})
+    .then(function(url){cb(url);})
+    .catch(function(e){toast("Image upload failed: "+(e.message||e.code));});
 }
 /* ========================================================== */
 
@@ -386,11 +415,6 @@ function poolEV(p){var t=poolTotal(p),s=0;if(!t)return 0;
 function rollItem(items){var t=0,i;for(i=0;i<items.length;i++)t+=Number(items[i].w)||0;
  var r=Math.random()*t;for(i=0;i<items.length;i++){r-=Number(items[i].w)||0;if(r<=0)return items[i]}
  return items[items.length-1]}
-function shrink(file,cb){var r=new FileReader();r.onload=function(){var im=new Image();
- im.onload=function(){var mx=680,sc=Math.min(1,mx/Math.max(im.width,im.height));
-  var c=document.createElement("canvas");c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);
-  c.getContext("2d").drawImage(im,0,0,c.width,c.height);cb(c.toDataURL("image/jpeg",.62))};
- im.onerror=function(){toast("Could not read that image")};im.src=r.result};r.readAsDataURL(file)}
 
 var tab="spin",unlocked=false,openOdds={},draft={task:null,photo:null,note:""},adminSub="queue";
 
@@ -586,7 +610,7 @@ function viewAdmin(){
    '<button class="q" data-act="tokens0"><b>Zero tokens</b><span>hard reset balance</span></button></div>';
  }
  if(adminSub==="prizes"){
-  h+='<div class="sec-t">PRIZE TABLE EDITOR</div><div class="box dash"><div class="hint">Weights are relative. Value $ computes avg payout. Targets: 1t~$0.25, 3t~$2, 5t~$5, 10t~$10.</div></div>';
+  h+='<div class="sec-t">PRIZE TABLE EDITOR</div><div class="box dash"><div class="hint">Weights are relative. Value $ computes avg payout.</div></div>';
   [1,3,5,10].forEach(function(p){
    var P=S.pools[p],tot=poolTotal(p);
    h+='<div class="sec-t">'+p+'-TOKEN POOL &middot; avg $'+poolEV(p).toFixed(2)+'</div><div class="box">'+
@@ -616,7 +640,8 @@ function viewAdmin(){
   h+='<button class="btn no" data-act="resetpools">RESET ALL POOLS TO DEFAULTS</button>';
  }
  if(adminSub==="cards"){
-  h+='<div class="sec-t">PHOTOCARD SETS</div>';
+  h+='<div class="sec-t">PHOTOCARD SETS</div>'+
+   '<div class="box dash"><div class="hint">Images now upload to Firebase Storage and only a short URL is saved &mdash; no more document-size limits.</div></div>';
   S.sets.forEach(function(st,si){
    h+='<div class="box"><div style="display:flex;justify-content:space-between;align-items:center">'+
     '<b style="font-size:12.5px">'+esc(st.name)+(st.completed?" (done)":"")+(si===S.active?" &middot; ACTIVE":"")+'</b>'+
@@ -845,8 +870,8 @@ document.body.addEventListener("click",function(e){
 document.body.addEventListener("change",function(e){
  var el=e.target,d=el.dataset;
  if(d.up){var f=el.files&&el.files[0];if(!f)return;
-  shrink(f,function(url){if(d.up==="proof"){draft.photo=url;render()}
-   if(d.up==="card"){S.sets[+d.s].cards[+d.i].img=url;save();render();toast("Image saved")}});return;}
+  shrinkBlob(f,function(blob){
+   if(d.up==="proof"){
     uploadImage(blob,"aequest/proofs/"+Date.now()+".jpg",function(url){draft.photo=url;render();});
    }
    if(d.up==="card"){
